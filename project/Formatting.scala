@@ -18,9 +18,10 @@ object Formatting extends AutoPlugin {
 
   def formattingPreferences =
     FormattingPreferences()
-      .setPreference(RewriteArrowSymbols, true)
+      .setPreference(RewriteArrowSymbols, false)
       .setPreference(AlignParameters, true)
       .setPreference(AlignSingleLineCaseStatements, true)
       .setPreference(DanglingCloseParenthesis, Preserve)
       .setPreference(DoubleIndentClassDeclaration, true)
+      .setPreference(SpacesAroundMultiImports, true)
 }
