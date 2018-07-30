@@ -9,7 +9,7 @@ object Formatting extends AutoPlugin {
 
   override def projectSettings: Seq[_root_.sbt.Def.Setting[_]] = formatSettings
 
-  lazy val formatSettings = SbtScalariform.scalariformSettings ++ Seq(
+  lazy val formatSettings = Seq(
     ScalariformKeys.preferences in Compile := formattingPreferences,
     ScalariformKeys.preferences in Test := formattingPreferences
   )
@@ -22,6 +22,6 @@ object Formatting extends AutoPlugin {
       .setPreference(AlignParameters, true)
       .setPreference(AlignSingleLineCaseStatements, true)
       .setPreference(DanglingCloseParenthesis, Preserve)
-      .setPreference(DoubleIndentClassDeclaration, true)
+      .setPreference(DoubleIndentConstructorArguments, true)
       .setPreference(SpacesAroundMultiImports, true)
 }
