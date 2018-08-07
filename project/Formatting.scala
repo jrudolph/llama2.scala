@@ -16,7 +16,7 @@ object Formatting extends AutoPlugin {
 
   import scalariform.formatter.preferences._
 
-  def formattingPreferences =
+  def formattingPreferences: FormattingPreferences =
     FormattingPreferences()
       .setPreference(RewriteArrowSymbols, false)
       .setPreference(AlignParameters, true)
