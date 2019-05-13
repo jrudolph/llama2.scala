@@ -1,8 +1,8 @@
-val scalaV = "2.12.6"
-val specs2V = "4.3.2"
+val scalaV = "2.12.8"
+val scalaTestV = "3.2.0-SNAP10"
 
 libraryDependencies ++= Seq(
-  "org.specs2" %% "specs2-core" % specs2V % "test"
+  "org.scalatest" %% "scalatest" % scalaTestV % "test"
 )
 
 scalaVersion := scalaV
