@@ -1,5 +1,5 @@
 val scalaV = "2.12.8"
-val scalaTestV = "3.2.0-SNAP10"
+val scalaTestV = "3.0.8"
 
 libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % scalaTestV % "test"
