@@ -1,5 +1,5 @@
-val scalaV = "2.13.2"
-val scalaTestV = "3.0.8"
+val scalaV = "2.13.3"
+val scalaTestV = "3.2.1"
 
 libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % scalaTestV % "test"
