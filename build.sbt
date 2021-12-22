@@ -1,5 +1,5 @@
-val scalaV = "2.13.5"
-val scalaTestV = "3.2.5"
+val scalaV = "2.13.7"
+val scalaTestV = "3.2.10"
 
 libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % scalaTestV % "test"
@@ -11,7 +11,7 @@ scalaVersion := scalaV
 
 enablePlugins(ParadoxMaterialThemePlugin)
 
-paradoxMaterialTheme in Compile := {
+Compile / paradoxMaterialTheme := {
   ParadoxMaterialTheme()
     // choose from https://jonas.github.io/paradox-material-theme/getting-started.html#changing-the-color-palette
     .withColor("light-green", "amber")
@@ -26,5 +26,5 @@ paradoxMaterialTheme in Compile := {
 }
 
 paradoxProperties ++= Map(
-  "github.base_url" -> (paradoxMaterialTheme in Compile).value.properties.getOrElse("repo", "")
+  "github.base_url" -> (Compile / paradoxMaterialTheme).value.properties.getOrElse("repo", "")
 )
