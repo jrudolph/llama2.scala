@@ -215,12 +215,13 @@ object Tensor2D {
     }
     def mulInto(v: Tensor1D, dest: Tensor1D): Tensor1D = {
       require(v.size == dim2)
+      val vs = v.toFloatArray
       var i = 0
       while (i < dim1) {
         var j = 0
         var sum = 0.0f
         while (j < dim2) {
-          sum += floatBuffer.get(i * dim2 + j) * v(j)
+          sum += floatBuffer.get(i * dim2 + j) * vs(j)
           j += 1
         }
         dest(i) = sum
