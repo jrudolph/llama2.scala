@@ -110,139 +110,6 @@ class RunState(
     val keyCache:   Array[Float],
     val valueCache: Array[Float]
 ) {
-  /*
-  void transformer(int token, int pos, Config* p, RunState* s, TransformerWeights* w) {
-
-      // a few convenience variables
-      float *x = s->x;
-      int dim = p->dim;
-      int hidden_dim =  p->hidden_dim;
-      int head_size = dim / p->n_heads;
-
-      // copy the token embedding into x
-      float* content_row = &(w->token_embedding_table[token * dim]);
-      memcpy(x, content_row, dim*sizeof(*x));
-
-      // pluck out the "pos" row of freq_cis_real and freq_cis_imag
-      float* freq_cis_real_row = w->freq_cis_real + pos * head_size / 2;
-      float* freq_cis_imag_row = w->freq_cis_imag + pos * head_size / 2;
-
-      // forward all the layers
-      for(int l = 0; l < p->n_layers; l++) {
-
-          // attention rmsnorm
-          rmsnorm(s->xb, x, w->rms_att_weight + l*dim, dim);
-
-          // qkv matmuls for this position
-          matmul(s->q, s->xb, w->wq + l*dim*dim, dim, dim);
-          matmul(s->k, s->xb, w->wk + l*dim*dim, dim, dim);
-          matmul(s->v, s->xb, w->wv + l*dim*dim, dim, dim);
-
-          // apply RoPE rotation to the q and k vectors for each head
-          for (int h = 0; h < p->n_heads; h++) {
-              // get the q and k vectors for this head
-              float* q = s->q + h * head_size;
-              float* k = s->k + h * head_size;
-              // rotate q and k by the freq_cis_real and freq_cis_imag
-              for (int i = 0; i < head_size; i+=2) {
-                  float q0 = q[i];
-                  float q1 = q[i+1];
-                  float k0 = k[i];
-                  float k1 = k[i+1];
-                  float fcr = freq_cis_real_row[i/2];
-                  float fci = freq_cis_imag_row[i/2];
-                  q[i]   = q0 * fcr - q1 * fci;
-                  q[i+1] = q0 * fci + q1 * fcr;
-                  k[i]   = k0 * fcr - k1 * fci;
-                  k[i+1] = k0 * fci + k1 * fcr;
-              }
-          }
-
-          // save key,value at this time step (pos) to our kv cache
-          int loff = l * p->seq_len * dim; // kv cache layer offset for convenience
-          float* key_cache_row = s->key_cache + loff + pos * dim;
-          float* value_cache_row = s->value_cache + loff + pos * dim;
-          memcpy(key_cache_row, s->k, dim*sizeof(*key_cache_row));
-          memcpy(value_cache_row, s->v, dim*sizeof(*value_cache_row));
-
-          // multihead attention. iterate over all heads
-          int h;
-          #pragma omp parallel for private(h)
-          for (h = 0; h < p->n_heads; h++) {
-              // get the query vector for this head
-              float* q = s->q + h * head_size;
-              // attention scores for this head
-              float* att = s->att + h * p->seq_len;
-              // iterate over all timesteps, including the current one
-              for (int t = 0; t <= pos; t++) {
-                  // get the key vector for this head and at this timestep
-                  float* k = s->key_cache + loff + t * dim + h * head_size;
-                  // calculate the attention score as the dot product of q and k
-                  float score = 0.0f;
-                  for (int i = 0; i < head_size; i++) {
-                      score += q[i] * k[i];
-                  }
-                  score /= sqrtf(head_size);
-                  // save the score to the attention buffer
-                  att[t] = score;
-              }
-
-              // softmax the scores to get attention weights, from 0..pos inclusively
-              softmax(att, pos + 1);
-
-              // weighted sum of the values, store back into xb
-              float* xb = s->xb + h * head_size;
-              memset(xb, 0, head_size * sizeof(float));
-              for (int t = 0; t <= pos; t++) {
-                  // get the value vector for this head and at this timestep
-                  float* v = s->value_cache + loff + t * dim + h * head_size;
-                  // get the attention weight for this timestep
-                  float a = att[t];
-                  // accumulate the weighted value into xb
-                  for (int i = 0; i < head_size; i++) {
-                      xb[i] += a * v[i];
-                  }
-              }
-          }
-
-          // final matmul to get the output of the attention
-          matmul(s->xb2, s->xb, w->wo + l*dim*dim, dim, dim);
-
-          // residual connection back into x
-          accum(x, s->xb2, dim);
-
-          // ffn rmsnorm
-          rmsnorm(s->xb, x, w->rms_ffn_weight + l*dim, dim);
-
-          // Now for FFN in PyTorch we have: self.w2(F.silu(self.w1(x)) * self.w3(x))
-          // first calculate self.w1(x) and self.w3(x)
-          matmul(s->hb, s->xb, w->w1 + l*dim*hidden_dim, dim, hidden_dim);
-          matmul(s->hb2, s->xb, w->w3 + l*dim*hidden_dim, dim, hidden_dim);
-
-          // F.silu; silu(x)=x*σ(x),where σ(x) is the logistic sigmoid
-          for (int i = 0; i < hidden_dim; i++) {
-              s->hb[i] = s->hb[i] * (1.0f / (1.0f + expf(-s->hb[i])));
-          }
-
-          // elementwise multiply with w3(x)
-          for (int i = 0; i < hidden_dim; i++) {
-              s->hb[i] = s->hb[i] * s->hb2[i];
-          }
-
-          // final matmul to get the output of the ffn
-          matmul(s->xb, s->hb, w->w2 + l*dim*hidden_dim, hidden_dim, dim);
-
-          // residual connection
-          accum(x, s->xb, dim);
-      }
-
-      // final rmsnorm
-      rmsnorm(x, x, w->rms_final_weight, dim);
-
-      // classifier into logits
-      matmul(s->logits, x, w->wcls, p->dim, p->vocab_size);
-  }
-   */
   val writer = new java.io.PrintWriter(new File("output.txt"))
   def println(str: String): Unit = {
     //Console.println(str)
@@ -619,16 +486,13 @@ object Llama2Main extends App {
     def readFloat(): Float = java.lang.Float.intBitsToFloat(readInt())
 
     val maxTokenLength = readInt()
-    println(s"Max token length: $maxTokenLength")
     val tokens =
       (0 until config.vocabSize).map { i =>
         val score = readFloat()
         val len = readInt()
         val bytes = new Array[Byte](len)
         fis.read(bytes)
-        val res = (new String(bytes), score)
-        //if (i < 1000) println(f"At $i%4d len $len%4d: $res")
-        res
+        (new String(bytes), score)
       }
     Vocab(tokens)
   }
@@ -643,38 +507,32 @@ object Llama2Main extends App {
   }
 
   val config = readConfig(checkpointFile)
-  println(config)
   val vocab = readVocab(config, tokenizerFile)
-  vocab.tokenScores.take(10).foreach(println)
   val weights = readWeights(config, checkpointFile)
-  println(f"token_embedding_table[0]: ${weights.tokenEmbeddingTable.get(0)}%g")
-  println(f"rms_att_weight[0]: ${weights.rms_att_weight.get(0)}%g")
-  println(f"wq[0]: ${weights.wq.get(0)}%g")
-  println(f"wk[0]: ${weights.wk.get(0)}%g")
-  println(f"wv[0]: ${weights.wv.get(0)}%g")
-  println(f"wo[0]: ${weights.wo.get(0)}%g")
-  println(f"rms_ffn_weight[0]: ${weights.rms_ffn_weight.get(0)}%g")
-  println(f"w1[0]: ${weights.w1.get(0)}%g")
-  println(f"w2[0]: ${weights.w2.get(0)}%g")
-  println(f"w3[0]: ${weights.w3.get(0)}%g")
-  println(f"rms_final_weight[0]: ${weights.rms_final_weight.get(0)}%g")
-  println(f"freq_cis_real[0]: ${weights.freq_cis_real.get(0)}%g")
-  println(f"freq_cis_imag[0]: ${weights.freq_cis_imag.get(0)}%g")
 
-  val state = RunState.init(config)
+  def run(): Unit = {
+    val state = RunState.init(config)
+    val steps = 256
 
-  state.logits.take(100).foreach(println)
+    var pos = 0
+    var token = 1
+    var next = 0
+    val start = System.nanoTime()
+    while (pos < steps) {
+      state.transformer(token, pos, config, weights)
+      next = state.logits.zipWithIndex.maxBy(_._1)._2 // argmax
+      val tok = vocab.tokenScores(next)._1
+      val tokenStr = if (token == 1 && tok == " ") tok.drop(1) else tok
+      print(tokenStr)
+      token = next
+      pos += 1
+    }
+    println()
 
-  var pos = 0
-  var token = 1
-  var next = 0
-  while (pos < 100) {
-    state.transformer(token, pos, config, weights)
-    next = state.logits.zipWithIndex.maxBy(_._1)._2 // argmax
-    val tok = vocab.tokenScores(next)._1
-    val tokenStr = if (token == 1 && tok == " ") tok.drop(1) else tok
-    print(tokenStr)
-    token = next
-    pos += 1
+    val end = System.nanoTime()
+    val lastedNanos = end - start
+    val tokensPerSecond = steps.toFloat / lastedNanos * 1e9
+    println(f"$tokensPerSecond%5.2f tokens per second")
   }
+  while (true) run()
 }
