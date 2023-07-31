@@ -24,3 +24,8 @@ Current numbers on my AMD Ryzen 7 4800H laptop:
 | llama2.scala on GraalVM JDK 17 single-thread | 61 | 0.94x |
 
 So, with a fast JVM, there's little slowdown compared to the original C code, even if the Scala code has not been optimized at all yet (aside from being written in a hardly bearable C-like fashion...).
+
+
+## License
+
+MIT
