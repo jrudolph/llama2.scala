@@ -49,6 +49,7 @@ trait Tensor1D {
   def size: Int
 
   def *(other: Tensor1D): Float
+  def +=(other: Tensor1D): Unit
 
   def copyTo(dest: Tensor1D): Unit
 
@@ -61,6 +62,7 @@ object Tensor1D {
     def size: Int = dim1
 
     def *(other: Tensor1D): Float = ???
+    def +=(other: Tensor1D): Unit = ???
 
     def copyTo(dest: Tensor1D): Unit = {
       // FIXME: assuming that dest has toFloatArray
@@ -86,6 +88,14 @@ object Tensor1D {
       }
       sum
     }
+    def +=(other: Tensor1D): Unit = {
+      val others = other.toFloatArray
+      var i = 0
+      while (i < dim) {
+        floats(i) += others(i)
+        i += 1
+      }
+    }
 
     def copyTo(dest: Tensor1D): Unit = ???
 
@@ -102,6 +112,8 @@ trait Tensor2D {
 
   def apply(i: Int): Tensor1D
 
+  def mulInto(v: Tensor1D, dest: Tensor1D): Tensor1D
+
   def toFloatArray: Array[Float]
   def toFloatBuffer: FloatBuffer
 }
@@ -115,6 +127,22 @@ object Tensor2D {
       val source = floatBuffer.duplicate().position(i * dim2).slice()
       Tensor1D(source, dim2)
     }
+    //def matmul(dest: Array[Float], x: Array[Float], w: FloatBuffer, n: Int, d: Int): Unit = {
+    def mulInto(v: Tensor1D, dest: Tensor1D): Tensor1D = {
+      require(v.size == dim2)
+      var i = 0
+      while (i < dim1) {
+        var j = 0
+        var sum = 0.0f
+        while (j < dim2) {
+          sum += floatBuffer.get(i * dim2 + j) * v(j)
+          j += 1
+        }
+        dest(i) = sum
+        i += 1
+      }
+      dest
+    }
 
     def toFloatArray: Array[Float] = ???
     def toFloatBuffer: FloatBuffer = floatBuffer.duplicate()
@@ -126,6 +154,8 @@ object Tensor2D {
     def size1: Int = dim2
 
     def apply(i: Int): Tensor1D = ???
+    override def mulInto(v: Tensor1D, dest: Tensor1D): Tensor1D = ???
+
     def toFloatArray: Array[Float] = floats
     def toFloatBuffer: FloatBuffer = ???
   }
@@ -276,9 +306,10 @@ class RunState(
       trace1d("attention rmsnorm", xb)
 
       // qkv calculations
-      matmul(q, xb, select3d(wq, dim, dim, l), dim, dim)
-      matmul(k, xb, select3d(wk, dim, dim, l), dim, dim)
-      matmul(v, xb, select3d(wv, dim, dim, l), dim, dim)
+      // FIXME: how do we avoid the overhead of the extra projection creating another class
+      wq(l).mulInto(xb, q)
+      wk(l).mulInto(xb, k)
+      wv(l).mulInto(xb, v)
 
       trace1d("q", q)
       trace1d("k", k)
@@ -400,10 +431,10 @@ class RunState(
       trace1d("attention", xb)
 
       // final matmul to get the output of the attention
-      matmul(xb2, xb, wo(l), dim, dim)
+      wo(l).mulInto(xb, xb2)
 
       // residual connection
-      accum(x, xb2, dim)
+      x += xb2
 
       trace1d("before ffn", x)
 
@@ -411,8 +442,8 @@ class RunState(
       rmsnorm(xb, x, rms_ffn_weight(l), dim)
 
       // ffn
-      matmul(hb, xb, w1(l), dim, hiddenDim)
-      matmul(hb2, xb, w3(l), dim, hiddenDim)
+      w1(l).mulInto(xb, hb)
+      w3(l).mulInto(xb, hb2)
 
       // silu
       {
@@ -434,10 +465,10 @@ class RunState(
       }
 
       // final matmul to get output of ffn
-      matmul(xb, hb, select3d(w2, dim, hiddenDim, l), hiddenDim, dim)
+      w2(l).mulInto(hb, xb)
 
       // residual connection
-      accum(x, xb, dim)
+      x += xb
 
       trace1d(s"layer done", x)
 
@@ -448,25 +479,11 @@ class RunState(
     rmsnorm(x, x, rms_final_weight, dim)
 
     // classifier into logits
-    matmul(logits, x, tokenEmbeddingTable, dim, vocabSize)
+    tokenEmbeddingTable.mulInto(x, logits)
   }
 
   def extractRow(dest: Array[Float], src: Array[Float], loff: Int, pos: Int, dim: Int): Unit =
     System.arraycopy(src, 0, dest, loff + pos * dim, dim)
-
-  def select3d(buffer: FloatBuffer, dim1: Int, dim2: Int, i: Int): FloatBuffer =
-    buffer.duplicate().position(i * dim1 * dim2).slice()
-
-  def select2d(buffer: FloatBuffer, dim1: Int, i: Int): FloatBuffer =
-    buffer.duplicate().position(i * dim1).slice()
-
-  def accum(into: Array[Float], from: Array[Float], size: Int): Unit = {
-    var i = 0
-    while (i < size) {
-      into(i) += from(i)
-      i += 1
-    }
-  }
 
   def softmax(x: Array[Float], off: Int, size: Int): Unit = {
     // find max value
@@ -515,25 +532,6 @@ class RunState(
       dest(i) = x(i) * factor * weight.get(i)
       i += 1
     }
-  }
-
-  def matmul(dest: Array[Float], x: Array[Float], w: FloatBuffer, n: Int, d: Int): Unit = {
-    var i = 0
-    while (i < d) {
-      var j = 0
-      var sum = 0.0f
-      while (j < n) {
-        sum += w.get(i * n + j) * x(j)
-        j += 1
-      }
-      dest(i) = sum
-      i += 1
-    }
-  }
-
-  def extractRowFrom2D(dest: Array[Float], from: FloatBuffer, dim1: Int, at: Int): Unit = {
-    val source = from.duplicate().position(at * dim1)
-    source.get(dest, 0, dim1)
   }
 }
 object RunState {
@@ -646,5 +644,7 @@ object Llama2Main extends App {
     val tokensPerSecond = steps.toFloat / lastedNanos * 1e9
     println(f"$tokensPerSecond%5.2f tokens per second")
   }
+  run()
+  run()
   run()
 }
