@@ -245,7 +245,7 @@ class RunState(
    */
   val writer = new java.io.PrintWriter(new File("output.txt"))
   def println(str: String): Unit = {
-    Console.println(str)
+    //Console.println(str)
     writer.println(str)
     writer.flush()
   }
@@ -349,7 +349,7 @@ class RunState(
 
               // safe to attention buffer
               att(attOffset + t) = score
-              println(f"att(${attOffset + t}%d) score $h%d $t%d $score%f")
+              //println(f"att(${attOffset + t}%d) score $h%d $t%d $score%f")
 
               t += 1
             }
@@ -377,14 +377,14 @@ class RunState(
               val vOff = loff + t * dim + h * headSize
               // get the attention weight for this timestep
               val a = att(attOffset + t) // accumulate the weighted value into xb
-              println(f"a $h%d $t%d $a%f")
+              //println(f"a $h%d $t%d $a%f")
 
               //
               {
                 var i = 0
                 while (i < headSize) {
                   xb(xbOff + i) += valueCache(vOff + i) * a
-                  println(f"v $h%d $t%d $i%d ${valueCache(vOff + i)}%f $a%f ${xb(xbOff + i)}%f")
+                  //println(f"v $h%d $t%d $i%d ${valueCache(vOff + i)}%f $a%f ${xb(xbOff + i)}%f")
                   i += 1
                 }
               }
@@ -662,6 +662,19 @@ object Llama2Main extends App {
   println(f"freq_cis_imag[0]: ${weights.freq_cis_imag.get(0)}%g")
 
   val state = RunState.init(config)
-  state.transformer(1, 0, config, weights)
+
   state.logits.take(100).foreach(println)
+
+  var pos = 0
+  var token = 1
+  var next = 0
+  while (pos < 100) {
+    state.transformer(token, pos, config, weights)
+    next = state.logits.zipWithIndex.maxBy(_._1)._2 // argmax
+    val tok = vocab.tokenScores(next)._1
+    val tokenStr = if (token == 1 && tok == " ") tok.drop(1) else tok
+    print(tokenStr)
+    token = next
+    pos += 1
+  }
 }
