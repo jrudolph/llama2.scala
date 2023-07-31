@@ -29,22 +29,6 @@ case class Vocab(
     tokenScores: Seq[(String, Float)]
 )
 
-trait Weights {
-  def tokenEmbeddingTable: Tensor2D
-  def rms_att_weight: Tensor2D
-  def wq: Tensor3D
-  def wk: Tensor3D
-  def wv: Tensor3D
-  def wo: Tensor3D
-  def rms_ffn_weight: Tensor2D
-  def w1: Tensor3D
-  def w2: Tensor3D
-  def w3: Tensor3D
-  def rms_final_weight: Tensor1D
-  def freq_cis_real: Tensor2D
-  def freq_cis_imag: Tensor2D
-}
-
 trait Tensor1D {
   def size: Int
 
@@ -57,6 +41,9 @@ trait Tensor1D {
 
   def *=(scalar: Float): Unit
   def /=(scalar: Float): Unit = this *= 1f / scalar
+
+  /* element-wise multiplication */
+  def *=(other: Tensor1D): Unit
 
   def expMut(): Unit
 
@@ -81,6 +68,7 @@ object Tensor1D {
     def +=(other: Tensor1D): Unit = ???
     def +=(scalar: Float): Unit = ???
     def *=(scalar: Float): Unit = ???
+    def *=(other: Tensor1D): Unit = ???
 
     def expMut(): Unit = ???
 
@@ -164,6 +152,15 @@ object Tensor1D {
       var i = 0
       while (i < dim) {
         fs(offset + i) *= scalar
+        i += 1
+      }
+    }
+
+    def *=(other: Tensor1D): Unit = {
+      val others = other.toFloatArray
+      var i = 0
+      while (i < dim) {
+        fs(offset + i) *= others(i)
         i += 1
       }
     }
@@ -294,6 +291,21 @@ object Tensor3D {
   implicit def autoArray(t3: Tensor3D): Array[Float] = t3.toFloatArray
 }
 
+trait Weights {
+  def tokenEmbeddingTable: Tensor2D
+  def rms_att_weight: Tensor2D
+  def wq: Tensor3D
+  def wk: Tensor3D
+  def wv: Tensor3D
+  def wo: Tensor3D
+  def rms_ffn_weight: Tensor2D
+  def w1: Tensor3D
+  def w2: Tensor3D
+  def w3: Tensor3D
+  def rms_final_weight: Tensor1D
+  def freq_cis_real: Tensor2D
+  def freq_cis_imag: Tensor2D
+}
 object Weights {
   def apply(config: Config, buffer: FloatBuffer): Weights = new Weights {
     def d1(dim1: Int): Tensor1D = {
@@ -509,8 +521,6 @@ class RunState(
           h += 1
         }
       }
-      //println(s"after attention in layer $l")
-      //xb.take(10).foreach(println)
       trace1d("attention", xb)
 
       // final matmul to get the output of the attention
@@ -529,6 +539,7 @@ class RunState(
       w3(l).mulInto(xb, hb2)
 
       // silu
+
       {
         var i = 0
         while (i < hiddenDim) {
@@ -539,13 +550,7 @@ class RunState(
       }
 
       // elementwise multiply
-      {
-        var i = 0
-        while (i < hiddenDim) {
-          hb(i) *= hb2(i)
-          i += 1
-        }
-      }
+      hb *= hb2
 
       // final matmul to get output of ffn
       w2(l).mulInto(hb, xb)
@@ -700,7 +705,7 @@ object Llama2Main extends App {
     val tokensPerSecond = steps.toFloat / lastedNanos * 1e9
     println(f"$tokensPerSecond%5.2f tokens per second")
   }
-  run()
+  while (true) run()
   run()
   run()
 }
