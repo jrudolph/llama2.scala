@@ -48,13 +48,22 @@ trait Weights {
 trait Tensor1D {
   def size: Int
 
+  def max: Float
+  def sum: Float
   def *(other: Tensor1D): Float
   def +=(other: Tensor1D): Unit
+  def +=(scalar: Float): Unit
+  def -=(scalar: Float): Unit = this += -scalar
+
   def *=(scalar: Float): Unit
   def /=(scalar: Float): Unit = this *= 1f / scalar
 
+  def expMut(): Unit
+
   def elementWiseMulInto(other: Tensor1D, dest: Tensor1D): Unit
 
+  /** Returns a new tensor backed by the same data but assuming a different dimension */
+  def shorten(newDim: Int): Tensor1D
   def copyTo(dest: Tensor1D): Unit
 
   def toFloatArray: Array[Float]
@@ -65,9 +74,15 @@ object Tensor1D {
   def apply(floatBuffer: FloatBuffer, dim1: Int): Tensor1D = new Tensor1D {
     def size: Int = dim1
 
+    def max: Float = ???
+    def sum: Float = ???
+
     def *(other: Tensor1D): Float = ???
     def +=(other: Tensor1D): Unit = ???
+    def +=(scalar: Float): Unit = ???
     def *=(scalar: Float): Unit = ???
+
+    def expMut(): Unit = ???
 
     def elementWiseMulInto(other: Tensor1D, dest: Tensor1D): Unit = {
       require(other.size == this.size)
@@ -80,6 +95,8 @@ object Tensor1D {
       }
     }
 
+    def shorten(newDim: Int): Tensor1D = ???
+
     def copyTo(dest: Tensor1D): Unit = {
       // FIXME: assuming that dest has toFloatArray
       floatBuffer.duplicate().get(dest.toFloatArray, 0, dim1)
@@ -88,10 +105,32 @@ object Tensor1D {
     def toFloatBuffer: FloatBuffer = floatBuffer
   }
 
-  def apply(floats: Array[Float], dim: Int): Tensor1D = new Tensor1D {
-    require(floats.size == dim)
+  def apply(fs: Array[Float], dim: Int, offset: Int = 0): Tensor1D = new Tensor1D {
+    require(fs.size >= offset + dim)
+
+    def floats(i: Int): Float = fs(offset + i)
 
     def size: Int = dim
+
+    def max: Float = {
+      var max = floats(0)
+      var i = 1
+      while (i < dim) {
+        val v = floats(i)
+        if (v > max) max = v
+        i += 1
+      }
+      max
+    }
+    def sum: Float = {
+      var sum = 0f
+      var i = 0
+      while (i < dim) {
+        sum += floats(i)
+        i += 1
+      }
+      sum
+    }
 
     def *(other: Tensor1D): Float = {
       require(other.size == this.size)
@@ -108,23 +147,48 @@ object Tensor1D {
       val others = other.toFloatArray
       var i = 0
       while (i < dim) {
-        floats(i) += others(i)
+        fs(offset + i) += others(i)
         i += 1
       }
     }
+
+    def +=(scalar: Float): Unit = {
+      var i = 0
+      while (i < dim) {
+        fs(offset + i) += scalar
+        i += 1
+      }
+    }
+
     def *=(scalar: Float): Unit = {
       var i = 0
       while (i < dim) {
-        floats(i) *= scalar
+        fs(offset + i) *= scalar
+        i += 1
+      }
+    }
+
+    def expMut(): Unit = {
+      var i = 0
+      while (i < dim) {
+        fs(offset + i) = math.exp(floats(i)).toFloat
         i += 1
       }
     }
 
     def elementWiseMulInto(other: Tensor1D, dest: Tensor1D): Unit = ???
 
+    def shorten(newDim: Int): Tensor1D = {
+      require(newDim <= size)
+      Tensor1D(fs, newDim, offset)
+    }
+
     def copyTo(dest: Tensor1D): Unit = ???
 
-    def toFloatArray: Array[Float] = floats
+    def toFloatArray: Array[Float] =
+      if (offset == 0 && fs.size == dim) fs
+      else ???
+
     def toFloatBuffer: FloatBuffer = ???
   }
 
@@ -152,7 +216,6 @@ object Tensor2D {
       val source = floatBuffer.duplicate().position(i * dim2).slice()
       Tensor1D(source, dim2)
     }
-    //def matmul(dest: Array[Float], x: Array[Float], w: FloatBuffer, n: Int, d: Int): Unit = {
     def mulInto(v: Tensor1D, dest: Tensor1D): Tensor1D = {
       require(v.size == dim2)
       var i = 0
@@ -178,7 +241,7 @@ object Tensor2D {
     def size0: Int = dim1
     def size1: Int = dim2
 
-    def apply(i: Int): Tensor1D = ???
+    def apply(i: Int): Tensor1D = Tensor1D(floats, dim2, offset = i * dim2)
     override def mulInto(v: Tensor1D, dest: Tensor1D): Tensor1D = ???
 
     def toFloatArray: Array[Float] = floats
@@ -405,7 +468,7 @@ class RunState(
             }
           }
 
-          softmax(att, attOffset, pos + 1)
+          softmax(att(h).shorten(pos + 1))
           trace1d("softmax att", att.toFloatArray.take(pos + 1))
 
           // weighted sum of the values, store into xb
@@ -505,32 +568,16 @@ class RunState(
   def storeRow(dest: Array[Float], src: Array[Float], loff: Int, pos: Int, dim: Int): Unit =
     System.arraycopy(src, 0, dest, loff + pos * dim, dim)
 
-  def softmax(x: Array[Float], off: Int, size: Int): Unit = {
+  def softmax(x: Tensor1D): Unit = {
     // find max value
-    var max = x(off + 0)
-    var j = 1
-    while (j < size) {
-      val v = x(off + j)
-      if (v > max) max = v
-      j += 1
-    }
+    val max = x.max
 
     // exp and sum
-    var sum = 0.0f
-    j = 0
-    while (j < size) {
-      val v = math.exp(x(off + j) - max).toFloat
-      x(off + j) = v
-      sum += v
-      j += 1
-    }
-
+    x -= max
+    x.expMut()
+    val sum = x.sum
     // normalize
-    j = 0
-    while (j < size) {
-      x(off + j) /= sum
-      j += 1
-    }
+    x /= sum
   }
 
   def rmsnorm(dest: Tensor1D, x: Tensor1D, weight: Tensor1D): Unit = {
