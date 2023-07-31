@@ -50,6 +50,10 @@ trait Tensor1D {
 
   def *(other: Tensor1D): Float
   def +=(other: Tensor1D): Unit
+  def *=(scalar: Float): Unit
+  def /=(scalar: Float): Unit = this *= 1f / scalar
+
+  def elementWiseMulInto(other: Tensor1D, dest: Tensor1D): Unit
 
   def copyTo(dest: Tensor1D): Unit
 
@@ -63,6 +67,18 @@ object Tensor1D {
 
     def *(other: Tensor1D): Float = ???
     def +=(other: Tensor1D): Unit = ???
+    def *=(scalar: Float): Unit = ???
+
+    def elementWiseMulInto(other: Tensor1D, dest: Tensor1D): Unit = {
+      require(other.size == this.size)
+      val destArray = dest.toFloatArray
+      val others = other.toFloatArray
+      var i = 0
+      while (i < size) {
+        destArray(i) = floatBuffer.get(i) * others(i)
+        i += 1
+      }
+    }
 
     def copyTo(dest: Tensor1D): Unit = {
       // FIXME: assuming that dest has toFloatArray
@@ -96,6 +112,15 @@ object Tensor1D {
         i += 1
       }
     }
+    def *=(scalar: Float): Unit = {
+      var i = 0
+      while (i < dim) {
+        floats(i) *= scalar
+        i += 1
+      }
+    }
+
+    def elementWiseMulInto(other: Tensor1D, dest: Tensor1D): Unit = ???
 
     def copyTo(dest: Tensor1D): Unit = ???
 
@@ -301,12 +326,11 @@ class RunState(
       println(s"start layer $l")
 
       // attention rmsnorm
-      rmsnorm(xb, x, rms_att_weight(l), dim)
+      rmsnorm(xb, x, rms_att_weight(l))
 
       trace1d("attention rmsnorm", xb)
 
       // qkv calculations
-      // FIXME: how do we avoid the overhead of the extra projection creating another class
       wq(l).mulInto(xb, q)
       wk(l).mulInto(xb, k)
       wv(l).mulInto(xb, v)
@@ -319,10 +343,6 @@ class RunState(
       {
         var h = 0
         while (h < nHeads) {
-          // get q and k for this head
-          //val tq = q(h * headSize)
-          //val tk = k(h * headSize)
-
           // rotation
           {
             var i = 0
@@ -354,8 +374,8 @@ class RunState(
 
       // cache kv at this pos
       val loff = l * seqLen * dim
-      extractRow(keyCache, k, loff, pos, dim)
-      extractRow(valueCache, v, loff, pos, dim)
+      storeRow(keyCache, k, loff, pos, dim)
+      storeRow(valueCache, v, loff, pos, dim)
 
       // multihead attention
       {
@@ -439,7 +459,7 @@ class RunState(
       trace1d("before ffn", x)
 
       // ffn rmsnorm
-      rmsnorm(xb, x, rms_ffn_weight(l), dim)
+      rmsnorm(xb, x, rms_ffn_weight(l))
 
       // ffn
       w1(l).mulInto(xb, hb)
@@ -476,13 +496,13 @@ class RunState(
     }
 
     // final rmsnorm
-    rmsnorm(x, x, rms_final_weight, dim)
+    rmsnorm(x, x, rms_final_weight)
 
     // classifier into logits
     tokenEmbeddingTable.mulInto(x, logits)
   }
 
-  def extractRow(dest: Array[Float], src: Array[Float], loff: Int, pos: Int, dim: Int): Unit =
+  def storeRow(dest: Array[Float], src: Array[Float], loff: Int, pos: Int, dim: Int): Unit =
     System.arraycopy(src, 0, dest, loff + pos * dim, dim)
 
   def softmax(x: Array[Float], off: Int, size: Int): Unit = {
@@ -513,25 +533,14 @@ class RunState(
     }
   }
 
-  def rmsnorm(dest: Tensor1D, x: Tensor1D, weight: Tensor1D, dim: Int): Unit = {
+  def rmsnorm(dest: Tensor1D, x: Tensor1D, weight: Tensor1D): Unit = {
     // calculate sum of squares
-    var sum = 0.0f
-    var i = 0
-    while (i < dim) {
-      val v = x(i)
-      sum += v * v
-      i += 1
-    }
+    val sum = x * x
 
-    // calculate normalization factor
-    val factor = 1f / math.sqrt(sum / dim + 1e-5f).toFloat
-
-    // normalize and scale values
-    i = 0
-    while (i < dim) {
-      dest(i) = x(i) * factor * weight.get(i)
-      i += 1
-    }
+    // scale values by weight
+    weight.elementWiseMulInto(x, dest)
+    // and normalize
+    dest /= math.sqrt(sum / x.size + 1e-5f).toFloat
   }
 }
 object RunState {
