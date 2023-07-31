@@ -10,6 +10,8 @@ to raise the abstraction layer to a more reasonable level (e.g. remove all of th
 with an almost verbatim port to get some intial performance numbers to see if it even makes sense to continue on the
 JVM.
 
+[![asciicast](https://asciinema.org/a/h7dJq7SOkmlCHmgI3DLRQBp58.svg)](https://asciinema.org/a/h7dJq7SOkmlCHmgI3DLRQBp58)
+
 ## Performance
 
 Current numbers on my AMD Ryzen 7 4800H laptop:
