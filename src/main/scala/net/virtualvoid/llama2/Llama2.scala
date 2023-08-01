@@ -66,6 +66,7 @@ object Weights {
     import scalanative.unsafe._
     import scalanative.unsigned._
     import scalanative.posix.fcntl._
+    /** position in the file in f32 units */
     var pos = 7 // skip header
     val buf: Ptr[Byte] =
       Zone { implicit z =>
@@ -520,21 +521,12 @@ object Llama2Main extends App {
       }
     Vocab(tokens)
   }
-  def readWeights(config: Config, checkpointFile: File): Weights = {
-    // memory map the file and setup the weight buffers
-    val raf = new RandomAccessFile(checkpointFile, "r")
-    /*val buffer = raf.getChannel.map(FileChannel.MapMode.READ_ONLY, 0, raf.length)
-    buffer.order(ByteOrder.LITTLE_ENDIAN)
-    buffer.position(ConfigSize)
-    val floatBuffer = buffer.asFloatBuffer()*/
+  def readWeights(config: Config, checkpointFile: File): Weights =
     Weights(config, checkpointFile)
-  }
 
   val config = readConfig(checkpointFile)
   val vocab = readVocab(config, tokenizerFile)
   val weights = readWeights(config, checkpointFile)
-  println(s"tokenEmbeddings[0]: ${weights.tokenEmbeddingTable.get(0)}")
-  println(s"rmsAttWeights[0]: ${weights.rms_att_weight.get(0)}")
 
   def run(): Unit = {
     val state = RunState.init(config)
