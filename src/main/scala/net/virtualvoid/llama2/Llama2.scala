@@ -295,17 +295,19 @@ object Tensor3D {
 trait Weights {
   def tokenEmbeddingTable: Tensor2D
   def rms_att_weight: Tensor2D
-  def wq: Tensor3D
-  def wk: Tensor3D
-  def wv: Tensor3D
-  def wo: Tensor3D
+  def wq: Array[Tensor2D]
+  def wk: Array[Tensor2D]
+  def wv: Array[Tensor2D]
+  def wo: Array[Tensor2D]
   def rms_ffn_weight: Tensor2D
-  def w1: Tensor3D
-  def w2: Tensor3D
-  def w3: Tensor3D
+  def w1: Array[Tensor2D]
+  def w2: Array[Tensor2D]
+  def w3: Array[Tensor2D]
   def rms_final_weight: Tensor1D
   def freq_cis_real: Tensor2D
   def freq_cis_imag: Tensor2D
+
+  def wcls: Tensor2D
 }
 object Weights {
   def apply(config: Config, ch: FileChannel): Weights = new Weights {
@@ -320,7 +322,8 @@ object Weights {
 
     def d1(dim1: Int): Tensor1D = Tensor1D(buffer(dim1), dim1)
     def d2(dim1: Int, dim2: Int): Tensor2D = Tensor2D(buffer(dim1 * dim2), dim1, dim2)
-    def d3(dim1: Int, dim2: Int, dim3: Int): Tensor3D = Tensor3D(buffer(dim1 * dim2 * dim3), dim1, dim2, dim3)
+    def d3(dim1: Int, dim2: Int, dim3: Int): Array[Tensor2D] = //Tensor3D(buffer(dim1 * dim2 * dim3), dim1, dim2, dim3)
+      Array.tabulate(dim1)(_ => d2(dim2, dim3))
 
     val tokenEmbeddingTable = d2(config.vocabSize, config.dim)
     val rms_att_weight = d2(config.nLayers, config.dim)
@@ -336,6 +339,7 @@ object Weights {
     val headSize = config.dim / config.nHeads
     val freq_cis_real = d2(config.seqLen, headSize / 2)
     val freq_cis_imag = d2(config.seqLen, headSize / 2)
+    val wcls = if (config.sharedWeights) tokenEmbeddingTable else d2(config.vocabSize, config.dim)
   }
 }
 
@@ -393,7 +397,7 @@ class RunState(
     // for all layers
     var l = 0
     while (l < nLayers) {
-      println(s"start layer $l")
+      Console.println(s"start layer $l")
 
       // attention rmsnorm
       rmsnorm(xb, x, rms_att_weight(l))
@@ -562,7 +566,7 @@ class RunState(
     rmsnorm(x, x, rms_final_weight)
 
     // classifier into logits
-    tokenEmbeddingTable.mulInto(x, logits)
+    wcls.mulInto(x, logits)
   }
 
   def storeRow(dest: Array[Float], src: Array[Float], loff: Int, pos: Int, dim: Int): Unit =
@@ -611,7 +615,7 @@ object RunState {
 }
 
 object Llama2Main extends App {
-  val checkpointFile = new File("stories15M.bin")
+  val checkpointFile = new File("llama2_7b.bin")
   val tokenizerFile = new File("tokenizer.bin")
 
   val ConfigSize = 4 * 7
@@ -685,6 +689,7 @@ object Llama2Main extends App {
       val tok = vocab.tokenScores(next)._1
       val tokenStr = if (token == 1 && tok == " ") tok.drop(1) else tok
       print(tokenStr)
+      Console.flush()
       token = next
       pos += 1
     }
