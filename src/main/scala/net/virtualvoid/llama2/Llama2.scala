@@ -1,8 +1,10 @@
 package net.virtualvoid.llama2
 
 import java.io.{ File, FileInputStream, RandomAccessFile }
-import java.nio.{ ByteOrder, FloatBuffer }
+import java.nio.ByteOrder
 import java.nio.channels.FileChannel
+import scala.scalanative.posix.sys.mman
+import scala.scalanative.unsigned.ULong
 
 /**
  * @param dim transformer dimension
@@ -29,6 +31,21 @@ case class Vocab(
     tokenScores: Seq[(String, Float)]
 )
 
+trait FloatBuffer {
+  def get(i: Int): Float
+  def duplicate(): FloatBuffer = this
+  def slice(): FloatBuffer = this
+  def position(i: Int): FloatBuffer
+}
+object FloatBuffer {
+  import scalanative.unsafe
+  def apply(ptr: unsafe.Ptr[Float], offset: Long): FloatBuffer = new FloatBuffer {
+    def get(i: Int): Float = ptr(offset + i)
+
+    def position(i: Int): FloatBuffer = apply(ptr, offset + i)
+  }
+}
+
 trait Weights {
   def tokenEmbeddingTable: FloatBuffer
   def rms_att_weight: FloatBuffer
@@ -45,23 +62,30 @@ trait Weights {
   def freq_cis_imag: FloatBuffer
 }
 object Weights {
-  def apply(config: Config, buffer: FloatBuffer): Weights = new Weights {
+  def apply(config: Config, file: File): Weights = new Weights {
+    import scalanative.unsafe._
+    import scalanative.unsigned._
+    import scalanative.posix.fcntl._
+    var pos = 7 // skip header
+    val buf: Ptr[Byte] =
+      Zone { implicit z =>
+        val fd = open(toCString(file.getPath()), O_RDONLY, 0.toUInt)
+        mman.mmap(null, file.length().toULong, mman.PROT_READ, mman.MAP_SHARED, fd, 0)
+      }
+
     def d1(dim1: Int): FloatBuffer = {
-      val res = buffer.slice()
-      res.limit(dim1)
-      buffer.position(buffer.position() + dim1)
+      val res = FloatBuffer(buf.asInstanceOf[Ptr[Float]], pos)
+      pos += dim1
       res
     }
     def d2(dim1: Int, dim2: Int): FloatBuffer = {
-      val res = buffer.slice()
-      res.limit(dim1 * dim2)
-      buffer.position(buffer.position() + dim1 * dim2)
+      val res = FloatBuffer(buf.asInstanceOf[Ptr[Float]], pos)
+      pos += dim1 * dim2
       res
     }
     def d3(dim1: Int, dim2: Int, dim3: Int): FloatBuffer = {
-      val res = buffer.slice()
-      res.limit(dim1 * dim2 * dim3)
-      buffer.position(buffer.position() + dim1 * dim2 * dim3)
+      val res = FloatBuffer(buf.asInstanceOf[Ptr[Float]], pos)
+      pos += dim1 * dim2 * dim3
       res
     }
 
@@ -416,10 +440,10 @@ class RunState(
   }
 
   def extractRowFrom2D(dest: Array[Float], from: FloatBuffer, dim1: Int, at: Int): Unit = {
-    val source = from.duplicate().position(at * dim1)
+    val source = from.duplicate().position(at * dim1).slice()
     var i = 0
     while (i < dim1) {
-      dest(i) = source.get()
+      dest(i) = source.get(i)
       i += 1
     }
   }
@@ -499,16 +523,18 @@ object Llama2Main extends App {
   def readWeights(config: Config, checkpointFile: File): Weights = {
     // memory map the file and setup the weight buffers
     val raf = new RandomAccessFile(checkpointFile, "r")
-    val buffer = raf.getChannel.map(FileChannel.MapMode.READ_ONLY, 0, raf.length)
+    /*val buffer = raf.getChannel.map(FileChannel.MapMode.READ_ONLY, 0, raf.length)
     buffer.order(ByteOrder.LITTLE_ENDIAN)
     buffer.position(ConfigSize)
-    val floatBuffer = buffer.asFloatBuffer()
-    Weights(config, floatBuffer)
+    val floatBuffer = buffer.asFloatBuffer()*/
+    Weights(config, checkpointFile)
   }
 
   val config = readConfig(checkpointFile)
   val vocab = readVocab(config, tokenizerFile)
   val weights = readWeights(config, checkpointFile)
+  println(s"tokenEmbeddings[0]: ${weights.tokenEmbeddingTable.get(0)}")
+  println(s"rmsAttWeights[0]: ${weights.rms_att_weight.get(0)}")
 
   def run(): Unit = {
     val state = RunState.init(config)
@@ -524,6 +550,7 @@ object Llama2Main extends App {
       val tok = vocab.tokenScores(next)._1
       val tokenStr = if (token == 1 && tok == " ") tok.drop(1) else tok
       print(tokenStr)
+      Console.flush()
       token = next
       pos += 1
     }
