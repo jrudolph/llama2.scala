@@ -67,28 +67,22 @@ object Weights {
     import scalanative.unsigned._
     import scalanative.posix.fcntl._
     /** position in the file in f32 units */
-    var pos = 7 // skip header
+    var pos = 7L // skip header
     val buf: Ptr[Byte] =
       Zone { implicit z =>
         val fd = open(toCString(file.getPath()), O_RDONLY, 0.toUInt)
         mman.mmap(null, file.length().toULong, mman.PROT_READ, mman.MAP_SHARED, fd, 0)
       }
 
-    def d1(dim1: Int): FloatBuffer = {
+    def getAndAdvance(size: Long): FloatBuffer = {
       val res = FloatBuffer(buf.asInstanceOf[Ptr[Float]], pos)
-      pos += dim1
+      pos += size
       res
     }
-    def d2(dim1: Int, dim2: Int): FloatBuffer = {
-      val res = FloatBuffer(buf.asInstanceOf[Ptr[Float]], pos)
-      pos += dim1 * dim2
-      res
-    }
-    def d3(dim1: Int, dim2: Int, dim3: Int): FloatBuffer = {
-      val res = FloatBuffer(buf.asInstanceOf[Ptr[Float]], pos)
-      pos += dim1 * dim2 * dim3
-      res
-    }
+
+    def d1(dim1: Int): FloatBuffer = getAndAdvance(dim1)
+    def d2(dim1: Int, dim2: Int): FloatBuffer = getAndAdvance(dim1.toLong * dim2)
+    def d3(dim1: Int, dim2: Int, dim3: Int): FloatBuffer = getAndAdvance(dim1.toLong * dim2 * dim3)
 
     val tokenEmbeddingTable: FloatBuffer = d2(config.vocabSize, config.dim)
     val rms_att_weight: FloatBuffer = d2(config.nLayers, config.dim)
