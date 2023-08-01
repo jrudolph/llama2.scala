@@ -307,25 +307,19 @@ trait Weights {
   def freq_cis_imag: Tensor2D
 }
 object Weights {
-  def apply(config: Config, buffer: FloatBuffer): Weights = new Weights {
-    def d1(dim1: Int): Tensor1D = {
-      val res = buffer.slice()
-      res.limit(dim1)
-      buffer.position(buffer.position() + dim1)
-      Tensor1D(res, dim1)
+  def apply(config: Config, ch: FileChannel): Weights = new Weights {
+    var pos = 7L * 4L // skip config header
+
+    def buffer(numElements: Int): FloatBuffer = {
+      val buffer = ch.map(FileChannel.MapMode.READ_ONLY, pos, numElements * 4)
+      pos += numElements * 4
+      buffer.order(ByteOrder.LITTLE_ENDIAN)
+      buffer.asFloatBuffer
     }
-    def d2(dim1: Int, dim2: Int): Tensor2D = {
-      val res = buffer.slice()
-      res.limit(dim1 * dim2)
-      buffer.position(buffer.position() + dim1 * dim2)
-      Tensor2D(res, dim1, dim2)
-    }
-    def d3(dim1: Int, dim2: Int, dim3: Int): Tensor3D = {
-      val res = buffer.slice()
-      res.limit(dim1 * dim2 * dim3)
-      buffer.position(buffer.position() + dim1 * dim2 * dim3)
-      Tensor3D(res, dim1, dim2, dim3)
-    }
+
+    def d1(dim1: Int): Tensor1D = Tensor1D(buffer(dim1), dim1)
+    def d2(dim1: Int, dim2: Int): Tensor2D = Tensor2D(buffer(dim1 * dim2), dim1, dim2)
+    def d3(dim1: Int, dim2: Int, dim3: Int): Tensor3D = Tensor3D(buffer(dim1 * dim2 * dim3), dim1, dim2, dim3)
 
     val tokenEmbeddingTable = d2(config.vocabSize, config.dim)
     val rms_att_weight = d2(config.nLayers, config.dim)
@@ -668,16 +662,12 @@ object Llama2Main extends App {
     Vocab(tokens)
   }
   def readWeights(config: Config, checkpointFile: File): Weights = {
-    // memory map the file and setup the weight buffers
     val raf = new RandomAccessFile(checkpointFile, "r")
-    val buffer = raf.getChannel.map(FileChannel.MapMode.READ_ONLY, 0, raf.length)
-    buffer.order(ByteOrder.LITTLE_ENDIAN)
-    buffer.position(ConfigSize)
-    val floatBuffer = buffer.asFloatBuffer()
-    Weights(config, floatBuffer)
+    Weights(config, raf.getChannel)
   }
 
   val config = readConfig(checkpointFile)
+  println(config)
   val vocab = readVocab(config, tokenizerFile)
   val weights = readWeights(config, checkpointFile)
 
@@ -705,7 +695,7 @@ object Llama2Main extends App {
     val tokensPerSecond = steps.toFloat / lastedNanos * 1e9
     println(f"$tokensPerSecond%5.2f tokens per second")
   }
-  while (true) run()
+  run()
   run()
   run()
 }
