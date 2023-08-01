@@ -7,6 +7,8 @@ libraryDependencies ++= Seq(
 
 scalaVersion := scalaV
 
+enablePlugins(ScalaNativePlugin)
+
 // docs
 
 enablePlugins(ParadoxMaterialThemePlugin)
@@ -28,3 +30,11 @@ Compile / paradoxMaterialTheme := {
 paradoxProperties ++= Map(
   "github.base_url" -> (Compile / paradoxMaterialTheme).value.properties.getOrElse("repo", "")
 )
+
+import scala.scalanative.build._
+
+nativeConfig ~= {
+  _.withLTO(LTO.thin)
+    .withMode(Mode.releaseFull)
+    .withGC(GC.commix)
+}
