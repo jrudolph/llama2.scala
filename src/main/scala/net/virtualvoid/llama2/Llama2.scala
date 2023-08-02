@@ -29,269 +29,6 @@ case class Vocab(
     tokenScores: Seq[(String, Float)]
 )
 
-trait Tensor1D {
-  def size: Int
-
-  def max: Float
-  def sum: Float
-  def *(other: Tensor1D): Float
-  def +=(other: Tensor1D): Unit
-  def +=(scalar: Float): Unit
-  def -=(scalar: Float): Unit = this += -scalar
-
-  def *=(scalar: Float): Unit
-  def /=(scalar: Float): Unit = this *= 1f / scalar
-
-  /* element-wise multiplication */
-  def *=(other: Tensor1D): Unit
-
-  def expMut(): Unit
-
-  def elementWiseMulInto(other: Tensor1D, dest: Tensor1D): Unit
-
-  /** Returns a new tensor backed by the same data but assuming a different dimension */
-  def shorten(newDim: Int): Tensor1D
-  def copyTo(dest: Tensor1D): Unit
-
-  def toFloatArray: Array[Float]
-  def toFloatBuffer: FloatBuffer
-}
-object Tensor1D {
-  def zero(dim1: Int): Tensor1D = Tensor1D(new Array[Float](dim1), dim1)
-  def apply(floatBuffer: FloatBuffer, dim1: Int): Tensor1D = new Tensor1D {
-    def size: Int = dim1
-
-    def max: Float = ???
-    def sum: Float = ???
-
-    def *(other: Tensor1D): Float = ???
-    def +=(other: Tensor1D): Unit = ???
-    def +=(scalar: Float): Unit = ???
-    def *=(scalar: Float): Unit = ???
-    def *=(other: Tensor1D): Unit = ???
-
-    def expMut(): Unit = ???
-
-    def elementWiseMulInto(other: Tensor1D, dest: Tensor1D): Unit = {
-      require(other.size == this.size)
-      val destArray = dest.toFloatArray
-      val others = other.toFloatArray
-      var i = 0
-      while (i < size) {
-        destArray(i) = floatBuffer.get(i) * others(i)
-        i += 1
-      }
-    }
-
-    def shorten(newDim: Int): Tensor1D = ???
-
-    def copyTo(dest: Tensor1D): Unit = {
-      // FIXME: assuming that dest has toFloatArray
-      floatBuffer.duplicate().get(dest.toFloatArray, 0, dim1)
-    }
-    def toFloatArray: Array[Float] = ???
-    def toFloatBuffer: FloatBuffer = floatBuffer
-  }
-
-  def apply(fs: Array[Float], dim: Int, offset: Int = 0): Tensor1D = new Tensor1D {
-    require(fs.size >= offset + dim)
-
-    def floats(i: Int): Float = fs(offset + i)
-
-    def size: Int = dim
-
-    def max: Float = {
-      var max = floats(0)
-      var i = 1
-      while (i < dim) {
-        val v = floats(i)
-        if (v > max) max = v
-        i += 1
-      }
-      max
-    }
-    def sum: Float = {
-      var sum = 0f
-      var i = 0
-      while (i < dim) {
-        sum += floats(i)
-        i += 1
-      }
-      sum
-    }
-
-    def *(other: Tensor1D): Float = {
-      require(other.size == this.size)
-      val others = other.toFloatArray
-      var i = 0
-      var sum = 0f
-      while (i < size) {
-        sum += floats(i) * others(i)
-        i += 1
-      }
-      sum
-    }
-    def +=(other: Tensor1D): Unit = {
-      val others = other.toFloatArray
-      var i = 0
-      while (i < dim) {
-        fs(offset + i) += others(i)
-        i += 1
-      }
-    }
-
-    def +=(scalar: Float): Unit = {
-      var i = 0
-      while (i < dim) {
-        fs(offset + i) += scalar
-        i += 1
-      }
-    }
-
-    def *=(scalar: Float): Unit = {
-      var i = 0
-      while (i < dim) {
-        fs(offset + i) *= scalar
-        i += 1
-      }
-    }
-
-    def *=(other: Tensor1D): Unit = {
-      val others = other.toFloatArray
-      var i = 0
-      while (i < dim) {
-        fs(offset + i) *= others(i)
-        i += 1
-      }
-    }
-
-    def expMut(): Unit = {
-      var i = 0
-      while (i < dim) {
-        fs(offset + i) = math.exp(floats(i)).toFloat
-        i += 1
-      }
-    }
-
-    def elementWiseMulInto(other: Tensor1D, dest: Tensor1D): Unit = ???
-
-    def shorten(newDim: Int): Tensor1D = {
-      require(newDim <= size)
-      Tensor1D(fs, newDim, offset)
-    }
-
-    def copyTo(dest: Tensor1D): Unit = ???
-
-    def toFloatArray: Array[Float] =
-      if (offset == 0 && fs.size == dim) fs
-      else ???
-
-    def toFloatBuffer: FloatBuffer = ???
-  }
-
-  implicit def autoBuffer(t1: Tensor1D): FloatBuffer = t1.toFloatBuffer
-  implicit def autoArray(t1: Tensor1D): Array[Float] = t1.toFloatArray
-}
-trait Tensor2D {
-  def size0: Int
-  def size1: Int
-
-  def apply(i: Int): Tensor1D
-
-  def mulInto(v: Tensor1D, dest: Tensor1D): Tensor1D
-
-  def toFloatArray: Array[Float]
-  def toFloatBuffer: FloatBuffer
-}
-object Tensor2D {
-  def zero(dim1: Int, dim2: Int): Tensor2D = Tensor2D(new Array[Float](dim1 * dim2), dim1, dim2)
-  def apply(fb: FloatBuffer, dim1: Int, dim2: Int): Tensor2D = new Tensor2D {
-    val floatBuffer = fb.duplicate()
-    def size0: Int = dim1
-    def size1: Int = dim2
-    def apply(i: Int): Tensor1D = {
-      val source = floatBuffer.duplicate().position(i * dim2).slice()
-      Tensor1D(source, dim2)
-    }
-    def mulInto(v: Tensor1D, dest: Tensor1D): Tensor1D = {
-      require(v.size == dim2)
-      val vs = v.toFloatArray
-      var i = 0
-      while (i < dim1) {
-        var j = 0
-        var sum = 0.0f
-        while (j < dim2) {
-          sum += floatBuffer.get(i * dim2 + j) * vs(j)
-          j += 1
-        }
-        dest(i) = sum
-        i += 1
-      }
-      dest
-    }
-
-    def toFloatArray: Array[Float] = ???
-    def toFloatBuffer: FloatBuffer = floatBuffer.duplicate()
-  }
-
-  def apply(floats: Array[Float], dim1: Int, dim2: Int): Tensor2D = new Tensor2D {
-    require(floats.size == dim1 * dim2)
-    def size0: Int = dim1
-    def size1: Int = dim2
-
-    def apply(i: Int): Tensor1D = Tensor1D(floats, dim2, offset = i * dim2)
-    override def mulInto(v: Tensor1D, dest: Tensor1D): Tensor1D = ???
-
-    def toFloatArray: Array[Float] = floats
-    def toFloatBuffer: FloatBuffer = ???
-  }
-
-  implicit def autoBuffer(t2: Tensor2D): FloatBuffer = t2.toFloatBuffer
-  implicit def autoArray(t2: Tensor2D): Array[Float] = t2.toFloatArray
-}
-trait Tensor3D {
-  def size0: Int
-
-  def size1: Int
-  def size2: Int
-
-  def apply(i: Int): Tensor2D
-
-  def toFloatArray: Array[Float]
-  def toFloatBuffer: FloatBuffer
-}
-object Tensor3D {
-  def zero(dim1: Int, dim2: Int, dim3: Int): Tensor3D = Tensor3D(new Array[Float](dim1 * dim2 * dim3), dim1, dim2, dim3)
-  def apply(floatBuffer: FloatBuffer, dim1: Int, dim2: Int, dim3: Int): Tensor3D = new Tensor3D {
-    def size0: Int = dim1
-    def size1: Int = dim2
-    def size2: Int = dim3
-
-    def apply(i: Int): Tensor2D = {
-      val source = floatBuffer.duplicate().position(i * dim2 * dim3).slice()
-      Tensor2D(source, dim2, dim3)
-    }
-
-    def toFloatArray: Array[Float] = ???
-    def toFloatBuffer: FloatBuffer = floatBuffer.duplicate()
-  }
-
-  def apply(floats: Array[Float], dim1: Int, dim2: Int, dim3: Int): Tensor3D = new Tensor3D {
-    require(floats.size == dim1 * dim2 * dim3)
-
-    def size0: Int = dim1
-    def size1: Int = dim2
-    def size2: Int = dim3
-
-    def apply(i: Int): Tensor2D = ???
-
-    def toFloatArray: Array[Float] = floats
-    def toFloatBuffer: FloatBuffer = ???
-  }
-  implicit def autoBuffer(t3: Tensor3D): FloatBuffer = t3.toFloatBuffer
-  implicit def autoArray(t3: Tensor3D): Array[Float] = t3.toFloatArray
-}
-
 trait Weights {
   def tokenEmbeddingTable: Tensor2D
   def rms_att_weight: Tensor2D
@@ -390,7 +127,7 @@ class RunState(
     import weights._
 
     // copy embedding for token to x
-    tokenEmbeddingTable(token).copyTo(x)
+    x := tokenEmbeddingTable(token)
 
     // select freq rows for pos
     val freq_cis_real_row = freq_cis_real(pos)
@@ -407,9 +144,9 @@ class RunState(
       trace1d("attention rmsnorm", xb)
 
       // qkv calculations
-      wq(l).mulInto(xb, q)
-      wk(l).mulInto(xb, k)
-      wv(l).mulInto(xb, v)
+      q := wq(l) * xb
+      k := wk(l) * xb
+      v := wv(l) * xb
 
       trace1d("q", q)
       trace1d("k", k)
@@ -450,8 +187,8 @@ class RunState(
 
       // cache kv at this pos
       val loff = l * seqLen * dim
-      storeRow(keyCache, k, loff, pos, dim)
-      storeRow(valueCache, v, loff, pos, dim)
+      keyCache(l)(pos) := k
+      valueCache(l)(pos) := v
 
       // multihead attention
       {
@@ -525,7 +262,7 @@ class RunState(
       trace1d("attention", xb)
 
       // final matmul to get the output of the attention
-      wo(l).mulInto(xb, xb2)
+      xb2 := wo(l) * xb
 
       // residual connection
       x += xb2
@@ -536,8 +273,8 @@ class RunState(
       rmsnorm(xb, x, rms_ffn_weight(l))
 
       // ffn
-      w1(l).mulInto(xb, hb)
-      w3(l).mulInto(xb, hb2)
+      hb := w1(l) * xb
+      hb2 := w3(l) * xb
 
       // silu
 
@@ -551,10 +288,10 @@ class RunState(
       }
 
       // elementwise multiply
-      hb *= hb2
+      hb ∘= hb2
 
       // final matmul to get output of ffn
-      w2(l).mulInto(hb, xb)
+      xb := w2(l) * hb
 
       // residual connection
       x += xb
@@ -568,11 +305,8 @@ class RunState(
     rmsnorm(x, x, rms_final_weight)
 
     // classifier into logits
-    tokenEmbeddingTable.mulInto(x, logits)
+    logits := tokenEmbeddingTable * x
   }
-
-  def storeRow(dest: Array[Float], src: Array[Float], loff: Int, pos: Int, dim: Int): Unit =
-    System.arraycopy(src, 0, dest, loff + pos * dim, dim)
 
   def softmax(x: Tensor1D): Unit = {
     // find max value
@@ -581,9 +315,8 @@ class RunState(
     // exp and sum
     x -= max
     x.expMut()
-    val sum = x.sum
     // normalize
-    x /= sum
+    x /= x.sum
   }
 
   def rmsnorm(dest: Tensor1D, x: Tensor1D, weight: Tensor1D): Unit = {
@@ -591,7 +324,8 @@ class RunState(
     val sum = x * x
 
     // scale values by weight
-    weight.elementWiseMulInto(x, dest)
+    dest := weight ∘ x
+
     // and normalize
     dest /= math.sqrt(sum / x.size + 1e-5f).toFloat
   }
@@ -706,7 +440,7 @@ object Llama2Main extends App {
     val tokensPerSecond = steps.toFloat / lastedNanos * 1e9
     println(f"$tokensPerSecond%5.2f tokens per second")
   }
-  while (true) run()
+  run()
   run()
   run()
 }
