@@ -240,7 +240,7 @@ class Llama2SimpleTransformer(
     rmsnorm(x, x, rms_final_weight, dim)
 
     // classifier into logits
-    matmul(logits, x, tokenEmbeddingTable, dim, vocabSize)
+    matmul(logits, x, wcls, dim, vocabSize)
 
     logits
   }
@@ -248,8 +248,7 @@ class Llama2SimpleTransformer(
   def extractRow(dest: Array[Float], src: Array[Float], loff: Int, pos: Int, dim: Int): Unit =
     System.arraycopy(src, 0, dest, loff + pos * dim, dim)
 
-  def select3d(buffer: FloatBuffer, dim1: Int, dim2: Int, i: Int): FloatBuffer =
-    buffer.duplicate().position(i * dim1 * dim2).slice()
+  def select3d(buffer: Tensor3D, dim1: Int, dim2: Int, i: Int): FloatBuffer = buffer(i)
 
   def select2d(buffer: FloatBuffer, dim1: Int, i: Int): FloatBuffer =
     buffer.duplicate().position(i * dim1).slice()

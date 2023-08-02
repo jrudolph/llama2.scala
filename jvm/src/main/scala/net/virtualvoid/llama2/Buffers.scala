@@ -5,28 +5,38 @@ import java.nio.ByteOrder
 import java.nio.channels.FileChannel
 
 trait Buffers {
-  def next(size: Long): FloatBuffer
+  def d1(dim1: Int): Tensor1D
+  def d2(dim1: Int, dim2: Int): Tensor2D
+  def d3(dim1: Int, dim2: Int, dim3: Int): Tensor3D
 }
 
 object Buffers {
   def fromFile(file: File, skipHeader: Int): Buffers = new Buffers {
-    // memory map the file and setup the weight buffers
-    def mapBuffer(): FloatBuffer = {
-      val f = new RandomAccessFile(file, "r")
-      val buffer = f.getChannel.map(FileChannel.MapMode.READ_ONLY, 0, f.length)
+    val fch = new RandomAccessFile(file, "r").getChannel
+
+    var pos = skipHeader.toLong
+    def next(size: Long): FloatBuffer = {
+      val buffer = fch.map(FileChannel.MapMode.READ_ONLY, pos, size * 4)
       buffer.order(ByteOrder.LITTLE_ENDIAN)
-      buffer.position(skipHeader)
+      pos += size * 4
       buffer.asFloatBuffer()
     }
-    val floatBuffer = mapBuffer()
 
-    def next(sizeL: Long): FloatBuffer = {
-      require(sizeL <= Int.MaxValue)
-      val size = sizeL.toInt
-      val res = floatBuffer.slice()
-      res.limit(size)
-      floatBuffer.position(floatBuffer.position() + size)
-      res
+    def d1(dim1: Int): Tensor1D = Tensor1D(next(dim1), dim1)
+    def d2(dim1: Int, dim2: Int): Tensor2D = Tensor2D(next(dim1 * dim2), dim1, dim2)
+    def d3(dim1: Int, dim2: Int, dim3: Int): Tensor3D = {
+      val elements = for (i <- 0 until dim1) yield d2(dim2, dim3)
+
+      new Tensor3D {
+        override def size0: Int = dim1
+        override def size1: Int = dim2
+        override def size2: Int = dim3
+
+        override def apply(i: Int): Tensor2D = elements(i)
+
+        override def toFloatArray: Array[Float] = ???
+        override def toFloatBuffer: FloatBuffer = ???
+      }
     }
   }
 }

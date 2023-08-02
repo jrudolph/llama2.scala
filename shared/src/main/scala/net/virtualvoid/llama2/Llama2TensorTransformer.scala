@@ -232,7 +232,7 @@ class Llama2TensorTransformer(
     rmsnorm(x, x, rms_final_weight)
 
     // classifier into logits
-    logits := tokenEmbeddingTable `@` x
+    logits := wcls `@` x
 
     logits
   }

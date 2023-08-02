@@ -12,14 +12,15 @@ import java.io.{ File, FileInputStream }
  * @param seqLen max sequence length
  */
 case class Config(
-    dim:       Int,
-    hiddenDim: Int,
-    nLayers:   Int,
-    nHeads:    Int,
-    nKvHeads:  Int,
-    vocabSize: Int,
-    seqLen:    Int,
-    eps:       Float = 1e-5f
+    dim:           Int,
+    hiddenDim:     Int,
+    nLayers:       Int,
+    nHeads:        Int,
+    nKvHeads:      Int,
+    vocabSize:     Int,
+    seqLen:        Int,
+    sharedWeights: Boolean,
+    eps:           Float   = 1e-5f
 ) {
   def headSize: Int = dim / nHeads
 }
@@ -36,14 +37,13 @@ object Config {
       b1 | (b2 << 8) | (b3 << 16) | (b4 << 24)
     }
 
-    Config(
-      dim = readInt(),
-      hiddenDim = readInt(),
-      nLayers = readInt(),
-      nHeads = readInt(),
-      nKvHeads = readInt(),
-      vocabSize = readInt(),
-      seqLen = readInt()
-    )
+    val dim = readInt()
+    val hiddenDim = readInt()
+    val nLayers = readInt()
+    val nHeads = readInt()
+    val nKvHeads = readInt()
+    val vocabSize = readInt()
+    val seqLen = readInt()
+    Config(dim, hiddenDim, nLayers, nHeads, nKvHeads, vocabSize.abs, seqLen, vocabSize > 0)
   }
 }

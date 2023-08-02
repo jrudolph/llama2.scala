@@ -8,6 +8,7 @@ object Llama2Main extends App {
     if (firstTry.exists()) firstTry.getParentFile
     else new File("..")
   }
+  //val checkpointFile = new File(baseDir, "llama2_7b.bin")
   val checkpointFile = new File(baseDir, "stories15M.bin")
   val tokenizerFile = new File(baseDir, "tokenizer.bin")
 

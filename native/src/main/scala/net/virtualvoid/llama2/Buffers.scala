@@ -7,7 +7,9 @@ import java.nio.channels.FileChannel
 import scalanative.posix.sys.mman
 
 trait Buffers {
-  def next(size: Long): FloatBuffer
+  def d1(dim1: Int): Tensor1D
+  def d2(dim1: Int, dim2: Int): Tensor2D
+  def d3(dim1: Int, dim2: Int, dim3: Int): Tensor3D
 }
 
 object Buffers {
@@ -30,5 +32,9 @@ object Buffers {
       pos += size
       res
     }
+
+    def d1(dim1: Int): Tensor1D = Tensor1D(next(dim1), dim1)
+    def d2(dim1: Int, dim2: Int): Tensor2D = Tensor2D(next(dim1 * dim2), dim1, dim2)
+    def d3(dim1: Int, dim2: Int, dim3: Int): Tensor3D = Tensor3D(next(dim1 * dim2 * dim3), dim1, dim2, dim3)
   }
 }
