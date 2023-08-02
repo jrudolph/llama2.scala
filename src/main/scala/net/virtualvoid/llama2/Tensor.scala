@@ -189,7 +189,7 @@ trait Tensor2D {
 
   def apply(i: Int): Tensor1D
 
-  def *(v: Tensor1D): Op1D
+  def `@`(v: Tensor1D): Op1D
 
   def toFloatArray: Array[Float]
   def toFloatBuffer: FloatBuffer
@@ -206,7 +206,7 @@ object Tensor2D {
       Tensor1D(source, dim2)
     }
 
-    override def *(v: Tensor1D): Op1D = new Op1D {
+    override def `@`(v: Tensor1D): Op1D = new Op1D {
       override def into(dest: Tensor1D): Unit = {
         require(v.size == dim2)
         val vs = v.toFloatArray
@@ -236,7 +236,7 @@ object Tensor2D {
     def size1: Int = dim2
 
     def apply(i: Int): Tensor1D = Tensor1D(fs, dim2, offset = offset + i * dim2)
-    def *(v: Tensor1D): Op1D = ???
+    def `@`(v: Tensor1D): Op1D = ???
 
     def toFloatArray: Array[Float] = if (offset == 0 && fs.length == dim1 * dim2) fs else ???
     def toFloatBuffer: FloatBuffer = ???

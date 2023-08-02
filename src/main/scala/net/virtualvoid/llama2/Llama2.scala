@@ -144,9 +144,9 @@ class RunState(
       trace1d("attention rmsnorm", xb)
 
       // qkv calculations
-      q := wq(l) * xb
-      k := wk(l) * xb
-      v := wv(l) * xb
+      q := wq(l) `@` xb
+      k := wk(l) `@` xb
+      v := wv(l) `@` xb
 
       trace1d("q", q)
       trace1d("k", k)
@@ -197,12 +197,14 @@ class RunState(
           val qOff = h * headSize
           val attOffset = h * seqLen
 
+          // att(h)(t) = q(h) * keyCache(l)
+
           {
             var t = 0
             while (t <= /* ! */ pos) {
               val kCacheOff = loff + t * dim + h * headSize
 
-              var score = 0f
+              var score = 0f // q(h)
               var i = 0
               while (i < headSize) {
                 score += q.toFloatArray(qOff + i) * keyCache.toFloatArray(kCacheOff + i)
@@ -262,7 +264,7 @@ class RunState(
       trace1d("attention", xb)
 
       // final matmul to get the output of the attention
-      xb2 := wo(l) * xb
+      xb2 := wo(l) `@` xb
 
       // residual connection
       x += xb2
@@ -273,10 +275,11 @@ class RunState(
       rmsnorm(xb, x, rms_ffn_weight(l))
 
       // ffn
-      hb := w1(l) * xb
-      hb2 := w3(l) * xb
+      hb := w1(l) `@` xb
+      hb2 := w3(l) `@` xb
 
       // silu
+      // hb := hb / (1f + exp(-hb))
 
       {
         var i = 0
@@ -291,7 +294,7 @@ class RunState(
       hb ∘= hb2
 
       // final matmul to get output of ffn
-      xb := w2(l) * hb
+      xb := w2(l) `@` hb
 
       // residual connection
       x += xb
@@ -305,7 +308,7 @@ class RunState(
     rmsnorm(x, x, rms_final_weight)
 
     // classifier into logits
-    logits := tokenEmbeddingTable * x
+    logits := tokenEmbeddingTable `@` x
   }
 
   def softmax(x: Tensor1D): Unit = {
