@@ -41,6 +41,6 @@ object Weights {
     val headSize = config.dim / config.nHeads
     val freq_cis_real = d2(config.seqLen, headSize / 2)
     val freq_cis_imag = d2(config.seqLen, headSize / 2)
-    val wcls = if (config.sharedWeights) tokenEmbeddingTable else d2(config.vocabSize, config.dim)
+    val wcls = if (config.sharedWeights) tokenEmbeddingTable.quantizeQ8 else d2(config.vocabSize, config.dim).quantizeQ8
   }
 }
