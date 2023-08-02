@@ -1,8 +1,11 @@
 package net.virtualvoid.llama2
 
 import java.io.File
+import java.nio.FloatBuffer
 
 /**
+ * A one-to-one translation from llama2.c C code to primitive Scala code.
+ *
  * @param x input
  * @param xb input with rmsnorm applied
  * @param xb2 input with rmsnorm applied twice
@@ -16,7 +19,9 @@ import java.io.File
  * @param keyCache key cache for multiquery
  * @param valueCache value cache for multiquery
  */
-class TransformerPrimitive(
+class Llama2SimpleTransformer(
+    config:         Config,
+    weights:        Weights,
     val x:          Array[Float],
     val xb:         Array[Float],
     val xb2:        Array[Float],
@@ -29,7 +34,7 @@ class TransformerPrimitive(
     val logits:     Array[Float],
     val keyCache:   Array[Float],
     val valueCache: Array[Float]
-) {
+) extends Llama2Transformer {
   val writer = new java.io.PrintWriter(new File("output.txt"))
   def println(str: String): Unit = {
     //Console.println(str)
@@ -42,7 +47,7 @@ class TransformerPrimitive(
     //arr.zipWithIndex.foreach { case (x, i) => println(f"$name%s $i%5d $x%f") }
   }
 
-  def transformer(token: Int, pos: Int, config: Config, weights: Weights): Unit = {
+  def step(token: Int, pos: Int): Array[Float] = {
     import config._
     import weights._
 
@@ -237,6 +242,8 @@ class TransformerPrimitive(
 
     // classifier into logits
     matmul(logits, x, tokenEmbeddingTable, dim, vocabSize)
+
+    logits
   }
 
   def extractRow(dest: Array[Float], src: Array[Float], loff: Int, pos: Int, dim: Int): Unit =
@@ -342,5 +349,27 @@ class TransformerPrimitive(
       dest(i) = source.get()
       i += 1
     }
+  }
+}
+
+object Llama2SimpleTransformer {
+  def init(config: Config, weights: Weights): Llama2Transformer = {
+    import config._
+    new Llama2SimpleTransformer(
+      config = config,
+      weights = weights,
+      x = new Array[Float](dim),
+      xb = new Array[Float](dim),
+      xb2 = new Array[Float](dim),
+      hb = new Array[Float](hiddenDim),
+      hb2 = new Array[Float](hiddenDim),
+      q = new Array[Float](dim),
+      k = new Array[Float](dim),
+      v = new Array[Float](dim),
+      att = new Array[Float](nHeads * seqLen),
+      logits = new Array[Float](config.vocabSize),
+      keyCache = new Array[Float](config.nLayers * seqLen * dim),
+      valueCache = new Array[Float](config.nLayers * seqLen * dim)
+    )
   }
 }

@@ -1,36 +1,6 @@
 package net.virtualvoid.llama2
 
-import java.io.{ File, FileInputStream }
-
-case class Vocab(
-    tokenScores: Seq[(String, Float)]
-)
-object Vocab {
-  def fromFile(config: Config, tokenizerFile: File): Vocab = {
-    val fis = new FileInputStream(tokenizerFile)
-
-    def readInt(): Int = {
-      val b1 = fis.read()
-      val b2 = fis.read()
-      val b3 = fis.read()
-      val b4 = fis.read()
-      b1 | (b2 << 8) | (b3 << 16) | (b4 << 24)
-    }
-
-    def readFloat(): Float = java.lang.Float.intBitsToFloat(readInt())
-
-    val maxTokenLength = readInt()
-    val tokens =
-      (0 until config.vocabSize).map { i =>
-        val score = readFloat()
-        val len = readInt()
-        val bytes = new Array[Byte](len)
-        fis.read(bytes)
-        (new String(bytes), score)
-      }
-    Vocab(tokens)
-  }
-}
+import java.io.File
 
 /**
  * @param x input
@@ -46,7 +16,7 @@ object Vocab {
  * @param keyCache key cache for multiquery
  * @param valueCache value cache for multiquery
  */
-class RunState(
+class Llama2TensorTransformer(
     config:         Config,
     weights:        Weights,
     val x:          Tensor1D, // dim
@@ -61,7 +31,7 @@ class RunState(
     val logits:     Tensor1D, // vocabSize
     val keyCache:   Tensor3D, // layer, seqLength, dim
     val valueCache: Tensor3D // layer, seqLength, dim
-) {
+) extends Llama2Transformer {
   import config._
 
   val writer = new java.io.PrintWriter(new File("output.txt"))
@@ -76,7 +46,7 @@ class RunState(
     //arr.zipWithIndex.foreach { case (x, i) => println(f"$name%s $i%5d $x%f") }
   }
 
-  def transformer(token: Int, pos: Int): Unit = {
+  def step(token: Int, pos: Int): Array[Float] = {
     import config._
     import weights._
 
@@ -263,6 +233,8 @@ class RunState(
 
     // classifier into logits
     logits := tokenEmbeddingTable `@` x
+
+    logits
   }
 
   def softmax(x: Tensor1D): Unit = {
@@ -287,10 +259,10 @@ class RunState(
     dest /= math.sqrt(sum / x.size + eps).toFloat
   }
 }
-object RunState {
-  def init(config: Config, weights: Weights): RunState = {
+object Llama2TensorTransformer {
+  def init(config: Config, weights: Weights): Llama2TensorTransformer = {
     import config._
-    new RunState(
+    new Llama2TensorTransformer(
       config = config,
       weights = weights,
       x = Tensor1D.zero(dim),
@@ -307,42 +279,4 @@ object RunState {
       valueCache = Tensor3D.zero(config.nLayers, seqLen, dim)
     )
   }
-}
-
-object Llama2Main extends App {
-  val checkpointFile = new File("stories15M.bin")
-  val tokenizerFile = new File("tokenizer.bin")
-
-  val config = Config.fromFile(checkpointFile)
-  val vocab = Vocab.fromFile(config, tokenizerFile)
-  val weights = Weights.fromFile(config, checkpointFile)
-
-  val state = RunState.init(config, weights)
-
-  def run(): Unit = {
-    val steps = 256
-
-    var pos = 0
-    var token = 1
-    var next = 0
-    val start = System.nanoTime()
-    while (pos < steps) {
-      state.transformer(token, pos)
-      next = state.logits.toFloatArray.zipWithIndex.maxBy(_._1)._2 // argmax
-      val tok = vocab.tokenScores(next)._1
-      val tokenStr = if (token == 1 && tok == " ") tok.drop(1) else tok
-      print(tokenStr)
-      token = next
-      pos += 1
-    }
-    println()
-
-    val end = System.nanoTime()
-    val lastedNanos = end - start
-    val tokensPerSecond = steps.toFloat / lastedNanos * 1e9
-    println(f"$tokensPerSecond%5.2f tokens per second")
-  }
-  run()
-  run()
-  run()
 }
