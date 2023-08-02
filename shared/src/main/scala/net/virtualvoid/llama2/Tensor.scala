@@ -177,6 +177,7 @@ object Tensor1D {
   implicit def autoArray(t1: Tensor1D): Array[Float] = t1.toFloatArray
 }
 
+/** An operation that still needs a destination to run */
 trait Op1D {
   def into(dest: Tensor1D): Unit
 }
