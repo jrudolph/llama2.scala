@@ -20,14 +20,65 @@ case class Config(
     nHeads:    Int,
     nKvHeads:  Int,
     vocabSize: Int,
-    seqLen:    Int
+    seqLen:    Int,
+    eps:       Float = 1e-5f
 ) {
   def headSize: Int = dim / nHeads
+}
+object Config {
+  val HeaderSize = 7 * 4
+  def fromFile(checkpoint: File): Config = {
+    val fis = new FileInputStream(checkpoint)
+
+    def readInt(): Int = {
+      val b1 = fis.read()
+      val b2 = fis.read()
+      val b3 = fis.read()
+      val b4 = fis.read()
+      b1 | (b2 << 8) | (b3 << 16) | (b4 << 24)
+    }
+
+    Config(
+      dim = readInt(),
+      hiddenDim = readInt(),
+      nLayers = readInt(),
+      nHeads = readInt(),
+      nKvHeads = readInt(),
+      vocabSize = readInt(),
+      seqLen = readInt()
+    )
+  }
 }
 
 case class Vocab(
     tokenScores: Seq[(String, Float)]
 )
+object Vocab {
+  def fromFile(config: Config, tokenizerFile: File): Vocab = {
+    val fis = new FileInputStream(tokenizerFile)
+
+    def readInt(): Int = {
+      val b1 = fis.read()
+      val b2 = fis.read()
+      val b3 = fis.read()
+      val b4 = fis.read()
+      b1 | (b2 << 8) | (b3 << 16) | (b4 << 24)
+    }
+
+    def readFloat(): Float = java.lang.Float.intBitsToFloat(readInt())
+
+    val maxTokenLength = readInt()
+    val tokens =
+      (0 until config.vocabSize).map { i =>
+        val score = readFloat()
+        val len = readInt()
+        val bytes = new Array[Byte](len)
+        fis.read(bytes)
+        (new String(bytes), score)
+      }
+    Vocab(tokens)
+  }
+}
 
 trait Weights {
   def tokenEmbeddingTable: Tensor2D
@@ -45,6 +96,16 @@ trait Weights {
   def freq_cis_imag: Tensor2D
 }
 object Weights {
+  def fromFile(config: Config, checkpointFile: File): Weights = {
+    // memory map the file and setup the weight buffers
+    val raf = new RandomAccessFile(checkpointFile, "r")
+    val buffer = raf.getChannel.map(FileChannel.MapMode.READ_ONLY, 0, raf.length)
+    buffer.order(ByteOrder.LITTLE_ENDIAN)
+    buffer.position(Config.HeaderSize)
+    val floatBuffer = buffer.asFloatBuffer()
+    Weights(config, floatBuffer)
+  }
+
   def apply(config: Config, buffer: FloatBuffer): Weights = new Weights {
     def d1(dim1: Int): Tensor1D = {
       val res = buffer.slice()
@@ -97,6 +158,8 @@ object Weights {
  * @param valueCache value cache for multiquery
  */
 class RunState(
+    config:         Config,
+    weights:        Weights,
     val x:          Tensor1D, // dim
     val xb:         Tensor1D, // dim
     val xb2:        Tensor1D, // dim
@@ -110,6 +173,9 @@ class RunState(
     val keyCache:   Tensor3D, // layer, seqLength, dim
     val valueCache: Tensor3D // layer, seqLength, dim
 ) {
+  import config._
+  import weights._
+
   val writer = new java.io.PrintWriter(new File("output.txt"))
   def println(str: String): Unit = {
     //Console.println(str)
@@ -122,7 +188,7 @@ class RunState(
     //arr.zipWithIndex.foreach { case (x, i) => println(f"$name%s $i%5d $x%f") }
   }
 
-  def transformer(token: Int, pos: Int, config: Config, weights: Weights): Unit = {
+  def transformer(token: Int, pos: Int): Unit = {
     import config._
     import weights._
 
@@ -330,13 +396,15 @@ class RunState(
     dest := weight ∘ x
 
     // and normalize
-    dest /= math.sqrt(sum / x.size + 1e-5f).toFloat
+    dest /= math.sqrt(sum / x.size + eps).toFloat
   }
 }
 object RunState {
-  def init(config: Config): RunState = {
+  def init(config: Config, weights: Weights): RunState = {
     import config._
     new RunState(
+      config = config,
+      weights = weights,
       x = Tensor1D.zero(dim),
       xb = Tensor1D.zero(dim),
       xb2 = Tensor1D.zero(dim),
@@ -357,70 +425,13 @@ object Llama2Main extends App {
   val checkpointFile = new File("stories15M.bin")
   val tokenizerFile = new File("tokenizer.bin")
 
-  val ConfigSize = 4 * 7
+  val config = Config.fromFile(checkpointFile)
+  val vocab = Vocab.fromFile(config, tokenizerFile)
+  val weights = Weights.fromFile(config, checkpointFile)
 
-  def readConfig(checkpoint: File): Config = {
-    val fis = new FileInputStream(checkpoint)
-
-    def readInt(): Int = {
-      val b1 = fis.read()
-      val b2 = fis.read()
-      val b3 = fis.read()
-      val b4 = fis.read()
-      b1 | (b2 << 8) | (b3 << 16) | (b4 << 24)
-    }
-
-    Config(
-      dim = readInt(),
-      hiddenDim = readInt(),
-      nLayers = readInt(),
-      nHeads = readInt(),
-      nKvHeads = readInt(),
-      vocabSize = readInt(),
-      seqLen = readInt()
-    )
-  }
-
-  def readVocab(config: Config, tokenizerFile: File): Vocab = {
-    val fis = new FileInputStream(tokenizerFile)
-
-    def readInt(): Int = {
-      val b1 = fis.read()
-      val b2 = fis.read()
-      val b3 = fis.read()
-      val b4 = fis.read()
-      b1 | (b2 << 8) | (b3 << 16) | (b4 << 24)
-    }
-
-    def readFloat(): Float = java.lang.Float.intBitsToFloat(readInt())
-
-    val maxTokenLength = readInt()
-    val tokens =
-      (0 until config.vocabSize).map { i =>
-        val score = readFloat()
-        val len = readInt()
-        val bytes = new Array[Byte](len)
-        fis.read(bytes)
-        (new String(bytes), score)
-      }
-    Vocab(tokens)
-  }
-  def readWeights(config: Config, checkpointFile: File): Weights = {
-    // memory map the file and setup the weight buffers
-    val raf = new RandomAccessFile(checkpointFile, "r")
-    val buffer = raf.getChannel.map(FileChannel.MapMode.READ_ONLY, 0, raf.length)
-    buffer.order(ByteOrder.LITTLE_ENDIAN)
-    buffer.position(ConfigSize)
-    val floatBuffer = buffer.asFloatBuffer()
-    Weights(config, floatBuffer)
-  }
-
-  val config = readConfig(checkpointFile)
-  val vocab = readVocab(config, tokenizerFile)
-  val weights = readWeights(config, checkpointFile)
+  val state = RunState.init(config, weights)
 
   def run(): Unit = {
-    val state = RunState.init(config)
     val steps = 256
 
     var pos = 0
@@ -428,7 +439,7 @@ object Llama2Main extends App {
     var next = 0
     val start = System.nanoTime()
     while (pos < steps) {
-      state.transformer(token, pos, config, weights)
+      state.transformer(token, pos)
       next = state.logits.toFloatArray.zipWithIndex.maxBy(_._1)._2 // argmax
       val tok = vocab.tokenScores(next)._1
       val tokenStr = if (token == 1 && tok == " ") tok.drop(1) else tok
