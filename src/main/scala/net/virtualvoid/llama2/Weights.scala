@@ -31,24 +31,16 @@ object Weights {
   }
 
   def apply(config: Config, buffer: FloatBuffer): Weights = new Weights {
-    def d1(dim1: Int): Tensor1D = {
+    private def buf(size: Int): FloatBuffer = {
       val res = buffer.slice()
-      res.limit(dim1)
-      buffer.position(buffer.position() + dim1)
-      Tensor1D(res, dim1)
+      res.limit(size)
+      buffer.position(buffer.position() + size)
+      res
     }
-    def d2(dim1: Int, dim2: Int): Tensor2D = {
-      val res = buffer.slice()
-      res.limit(dim1 * dim2)
-      buffer.position(buffer.position() + dim1 * dim2)
-      Tensor2D(res, dim1, dim2)
-    }
-    def d3(dim1: Int, dim2: Int, dim3: Int): Tensor3D = {
-      val res = buffer.slice()
-      res.limit(dim1 * dim2 * dim3)
-      buffer.position(buffer.position() + dim1 * dim2 * dim3)
-      Tensor3D(res, dim1, dim2, dim3)
-    }
+
+    def d1(dim1: Int): Tensor1D = Tensor1D(buf(dim1), dim1)
+    def d2(dim1: Int, dim2: Int): Tensor2D = Tensor2D(buf(dim1 * dim2), dim1, dim2)
+    def d3(dim1: Int, dim2: Int, dim3: Int): Tensor3D = Tensor3D(buf(dim1 * dim2 * dim3), dim1, dim2, dim3)
 
     val tokenEmbeddingTable = d2(config.vocabSize, config.dim)
     val rms_att_weight = d2(config.nLayers, config.dim)
