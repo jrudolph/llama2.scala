@@ -19,18 +19,18 @@ import java.io.File
 class Llama2TensorTransformer(
     config:         Config,
     weights:        Weights,
-    val x:          Tensor1D, // dim
-    val xb:         Tensor1D, // dim
-    val xb2:        Tensor1D, // dim
-    val hb:         Tensor1D, // hiddenDim
-    val hb2:        Tensor1D, // hiddenDim
-    val q:          Tensor1D, // dim
-    val k:          Tensor1D, // dim
-    val v:          Tensor1D, // dim
-    val att:        Tensor2D, // nHeads, seqLength
-    val logits:     Tensor1D, // vocabSize
-    val keyCache:   Tensor3D, // layer, seqLength, dim
-    val valueCache: Tensor3D // layer, seqLength, dim
+    val x:          Tensor1DMut, // dim
+    val xb:         Tensor1DMut, // dim
+    val xb2:        Tensor1DMut, // dim
+    val hb:         Tensor1DMut, // hiddenDim
+    val hb2:        Tensor1DMut, // hiddenDim
+    val q:          Tensor1DMut, // dim
+    val k:          Tensor1DMut, // dim
+    val v:          Tensor1DMut, // dim
+    val att:        Tensor2DMut, // nHeads, seqLength
+    val logits:     Tensor1DMut, // vocabSize
+    val keyCache:   Tensor3DMut, // layer, seqLength, dim
+    val valueCache: Tensor3DMut // layer, seqLength, dim
 ) extends Llama2Transformer {
   import config._
 
@@ -237,7 +237,7 @@ class Llama2TensorTransformer(
     logits
   }
 
-  def softmax(x: Tensor1D): Unit = {
+  def softmax(x: Tensor1DMut): Unit = {
     // find max value
     val max = x.max
 
@@ -248,7 +248,7 @@ class Llama2TensorTransformer(
     x /= x.sum
   }
 
-  def rmsnorm(x: Tensor1D, weight: Tensor1D): Op1D = { dest =>
+  def rmsnorm(x: Tensor1DMut, weight: Tensor1D): Op1D = { dest =>
     // calculate sum of squares
     val sum = x * x
 
@@ -265,18 +265,18 @@ object Llama2TensorTransformer {
     new Llama2TensorTransformer(
       config = config,
       weights = weights,
-      x = Tensor1D.zero(dim),
-      xb = Tensor1D.zero(dim),
-      xb2 = Tensor1D.zero(dim),
-      hb = Tensor1D.zero(hiddenDim),
-      hb2 = Tensor1D.zero(hiddenDim),
-      q = Tensor1D.zero(dim),
-      k = Tensor1D.zero(dim),
-      v = Tensor1D.zero(dim),
-      att = Tensor2D.zero(nHeads, seqLen),
-      logits = Tensor1D.zero(config.vocabSize),
-      keyCache = Tensor3D.zero(config.nLayers, seqLen, dim),
-      valueCache = Tensor3D.zero(config.nLayers, seqLen, dim)
+      x = Tensor1DMut.zero(dim),
+      xb = Tensor1DMut.zero(dim),
+      xb2 = Tensor1DMut.zero(dim),
+      hb = Tensor1DMut.zero(hiddenDim),
+      hb2 = Tensor1DMut.zero(hiddenDim),
+      q = Tensor1DMut.zero(dim),
+      k = Tensor1DMut.zero(dim),
+      v = Tensor1DMut.zero(dim),
+      att = Tensor2DMut.zero(nHeads, seqLen),
+      logits = Tensor1DMut.zero(config.vocabSize),
+      keyCache = Tensor3DMut.zero(config.nLayers, seqLen, dim),
+      valueCache = Tensor3DMut.zero(config.nLayers, seqLen, dim)
     )
   }
 }
