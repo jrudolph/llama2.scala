@@ -219,7 +219,6 @@ object Tensor2D {
 
       val numBlocks = size0 * size1 / K
 
-      //lazy val (quantized, quantizeFactor) = {
       val quantized = new Array[Byte](size0 * size1)
       val quantizeFactor = new Array[Float](numBlocks)
 
@@ -233,14 +232,11 @@ object Tensor2D {
           if (v > max) max = v
           j += 1
         }
-        //println(s"Max: ${max}")
 
         val d = max / ((1 << 7) - 1)
         val id = if (d != 0f) 1.0f / d else 0.0f
-        //println(f"Quantize factor: ${d}%.6f inverse: ${id}%.6f")
 
         quantizeFactor(i) = d
-        //println(f"[$i%2d] max: $max%.6f Quantize factor: ${d}%.6f inverse: ${id}%.6f First: ${floatBuffer.get(i * K)}%.6f)}")
 
         j = 0
         while (j < K) {
@@ -254,9 +250,6 @@ object Tensor2D {
         i += 1
       }
 
-      //(quantized, quantizeFactor)
-      //}
-
       new Tensor2D {
         def size0: Int = dim1
         def size1: Int = dim2
@@ -266,6 +259,8 @@ object Tensor2D {
         def `@`(v: Tensor1DMut): Op1D = { dest =>
           val arr = v.toFloatArray
           require(arr.length % K == 0)
+
+          // quantize v as well (it will be used `dim1` times so it is worth it)
           val quantizedV = new Array[Byte](arr.size)
           val numBlocksV = arr.size / K
           val quantizeVFactor = new Array[Float](numBlocksV)
@@ -304,72 +299,16 @@ object Tensor2D {
             require(numBlocksV * 32 == dim2)
             while (j < numBlocksV) {
               var sumq = 0
-              //var sumc = 0f
               var k = 0
               while (k < K) {
                 sumq += quantized(i * dim2 + j * K + k) * quantizedV(j * K + k)
-                //sumc += floatBuffer.get(i * dim2 + j * K + k) * arr(j * K + k)
                 k += 1
               }
-              val sumq2 = sumq.toFloat * quantizeFactor(i * dim2 / K + j) * quantizeVFactor(j)
-              //println((sumq2 - sumc, sumq2, sumc))
-              //if (math.abs(sumq2 - sumc) / sumc > 0.7f) {
-              if (false) {
-                //if (i == 1) {
-                //println(s"Error at $i $j $K $dim1 $dim2 ${i * dim2 + j}: ${sumq2 - sumc} $sumq2 $sumc")
-                //println(math.abs(sumq2 - sumc))
-                var k = 0
-                while (k < K) {
-                  val d1 = quantizeFactor(i * dim2 / K + j)
-                  val qv1 = quantized(i * dim2 + j * K + k)
-                  val q1 = qv1 * d1
-                  val d2 = quantizeVFactor(j)
-                  val q2 = quantizedV(j * K + k) * d2
-                  val o1 = floatBuffer.get(i * dim2 + j * K + k)
-                  val o2 = arr(j * K + k)
-
-                  val qr = q1 * q2
-                  val or = o1 * o2
-                  println(f"$k%2d: $q1%9.6f ($qv1%4d) * $q2%9.6f = $qr%9.6f $d1%9.6f $d2%9.6f ${o1 / d1} ${math.round(o1 * 1f / d1).toByte}")
-                  println(f"$k%2d: $o1%9.6f ($qv1%4d) * $o2%9.6f = $or%8.5f")
-
-                  k += 1
-                }
-
-                {
-                  var k = 0
-                  var max = 0f
-                  while (k < K) {
-                    val v = floatBuffer.get(i * dim2 + j * K + k).abs
-                    if (v > max) max = v
-                    k += 1
-                  }
-                  println(s"Max: ${max}")
-
-                  val d = max / ((1 << 7) - 1).toFloat
-                  val id = if (d != 0f) 1.0f / d else 0.0f
-                  println(f"Quantize factor: ${d}%9.6f inverse: ${id}%9.6f")
-
-                  //quantizeFactor(i) = d
-                  k = 0
-                  while (k < K) {
-                    val v = floatBuffer.get(i * dim2 + j * K + k)
-                    val x0 = v * id // scale
-                    val q = math.round(x0).toByte
-                    println(f"At ${k}%2d / ${i * dim2 + j * K + k}%4d v: $v%9.6f x0: ${x0}%9.6f quantized: ${q}%4d")
-                    k += 1
-                  }
-                }
-
-                ???
-              }
-              sum += sumq2
-              //sum2 += sumc
+              sum += sumq.toFloat * quantizeFactor(i * dim2 / K + j) * quantizeVFactor(j)
 
               j += 1
             }
 
-            //println(sum -> sum2)
             dest(i) = sum
             i += 1
           }
