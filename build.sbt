@@ -1,17 +1,31 @@
-val scalaV = "2.13.11"
-val scalaTestV = "3.2.16"
+import scala.scalanative.build._
 
-libraryDependencies ++= Seq(
-  "org.scalatest" %% "scalatest" % scalaTestV % "test"
-)
+val scalaV = "3.3.0"
 
-scalaVersion := scalaV
-
-enablePlugins(ScalaNativePlugin)
+lazy val llama2 =
+  crossProject(JVMPlatform, NativePlatform)
+    .crossType(CrossType.Full)
+    .in(file("."))
+    .settings(
+      Seq(
+        scalaVersion := scalaV
+      )
+    )
+    .nativeSettings(
+      nativeConfig ~= {
+        _.withLTO(LTO.thin)
+          .withMode(Mode.releaseFast)
+          .withGC(GC.commix)
+      }
+    )
 
 // docs
 
 enablePlugins(ParadoxMaterialThemePlugin)
+
+paradoxProperties ++= Map(
+  "github.base_url" -> (Compile / paradoxMaterialTheme).value.properties.getOrElse("repo", "")
+)
 
 Compile / paradoxMaterialTheme := {
   ParadoxMaterialTheme()
@@ -25,16 +39,4 @@ Compile / paradoxMaterialTheme := {
       uri("https://github.com/jrudolph"),
       uri("https://twitter.com/virtualvoid")
     )
-}
-
-paradoxProperties ++= Map(
-  "github.base_url" -> (Compile / paradoxMaterialTheme).value.properties.getOrElse("repo", "")
-)
-
-import scala.scalanative.build._
-
-nativeConfig ~= {
-  _.withLTO(LTO.thin)
-    .withMode(Mode.releaseFull)
-    .withGC(GC.commix)
 }

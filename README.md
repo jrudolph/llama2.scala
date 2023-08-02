@@ -12,16 +12,25 @@ JVM.
 
 [![asciicast](https://asciinema.org/a/h7dJq7SOkmlCHmgI3DLRQBp58.svg)](https://asciinema.org/a/h7dJq7SOkmlCHmgI3DLRQBp58)
 
+## Implementation details
+
+There are currently two implementations:
+
+ * `Llama2SimpleTransformer` which is a direct port of the original C code
+ * `Llama2TensorTransformer` which uses a `Tensor` abstraction to make the code more readable
+
 ## Performance
 
 Current numbers on my AMD Ryzen 7 4800H laptop:
 
-| Implementation | Tokens per second | Speedup |
-| -------------- | ----------------- | ------- |
-| llama2.c single-thread | 65 | 1.0x |
-| llama2.c multi-thread | ~350 | 5.5x |
-| llama2.scala on OpenJDK 11 single-thread| 50 | 0.77x |
-| llama2.scala on GraalVM JDK 17 single-thread | 61 | 0.94x |
+| Implementation                                                | Tokens per second | Speedup |
+|---------------------------------------------------------------|-------------------|---------|
+| llama2.c single-thread                                        | 65                | 1.0x    |
+| llama2.c multi-thread (OMP)                                   | ~350              | 5.5x    |
+| Llama2SimpleTransformer on scala-native 0.4.14 vanilla        | 14                | 0.22x   |
+| Llama2SimpleTransformer on scala-native 0.4.14 (native mmaps) | 80                | 0.77x   |
+| Llama2SimpleTransformer on OpenJDK 11 single-thread           | 50                | 0.77x   |
+| Llama2SimpleTransformer on GraalVM JDK 17 single-thread       | 61                | 0.94x   |
 
 So, with a fast JVM, there's little slowdown compared to the original C code, even if the Scala code has not been optimized at all yet (aside from being written in a hardly bearable C-like fashion...).
 

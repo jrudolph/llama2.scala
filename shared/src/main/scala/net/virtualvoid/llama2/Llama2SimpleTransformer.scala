@@ -1,107 +1,10 @@
 package net.virtualvoid.llama2
 
-import java.io.{ File, FileInputStream, RandomAccessFile }
-import java.nio.ByteOrder
-import java.nio.channels.FileChannel
-import scala.scalanative.posix.sys.mman
-import scala.scalanative.unsigned.ULong
+import java.io.File
 
 /**
- * @param dim transformer dimension
- * @param hiddenDim for ffn layers
- * @param nLayers number of layers
- * @param nHeads number of query heads
- * @param nKvHeads number of key/value heads (can be < query heads because of multiquery)
- * @param vocabSize vocabulary size, usually 256 (byte-level)
- * @param seqLen max sequence length
- */
-case class Config(
-    dim:       Int,
-    hiddenDim: Int,
-    nLayers:   Int,
-    nHeads:    Int,
-    nKvHeads:  Int,
-    vocabSize: Int,
-    seqLen:    Int
-) {
-  def headSize: Int = dim / nHeads
-}
-
-case class Vocab(
-    tokenScores: Seq[(String, Float)]
-)
-
-trait FloatBuffer {
-  def get(i: Int): Float
-  def duplicate(): FloatBuffer = this
-  def slice(): FloatBuffer = this
-  def position(i: Int): FloatBuffer
-}
-object FloatBuffer {
-  import scalanative.unsafe
-  def apply(ptr: unsafe.Ptr[Float], offset: Long): FloatBuffer = new FloatBuffer {
-    def get(i: Int): Float = ptr(offset + i)
-
-    def position(i: Int): FloatBuffer = apply(ptr, offset + i)
-  }
-}
-
-trait Weights {
-  def tokenEmbeddingTable: FloatBuffer
-  def rms_att_weight: FloatBuffer
-  def wq: FloatBuffer
-  def wk: FloatBuffer
-  def wv: FloatBuffer
-  def wo: FloatBuffer
-  def rms_ffn_weight: FloatBuffer
-  def w1: FloatBuffer
-  def w2: FloatBuffer
-  def w3: FloatBuffer
-  def rms_final_weight: FloatBuffer
-  def freq_cis_real: FloatBuffer
-  def freq_cis_imag: FloatBuffer
-}
-object Weights {
-  def apply(config: Config, file: File): Weights = new Weights {
-    import scalanative.unsafe._
-    import scalanative.unsigned._
-    import scalanative.posix.fcntl._
-    /** position in the file in f32 units */
-    var pos = 7L // skip header
-    val buf: Ptr[Byte] =
-      Zone { implicit z =>
-        val fd = open(toCString(file.getPath()), O_RDONLY, 0.toUInt)
-        mman.mmap(null, file.length().toULong, mman.PROT_READ, mman.MAP_SHARED, fd, 0)
-      }
-
-    def getAndAdvance(size: Long): FloatBuffer = {
-      val res = FloatBuffer(buf.asInstanceOf[Ptr[Float]], pos)
-      pos += size
-      res
-    }
-
-    def d1(dim1: Int): FloatBuffer = getAndAdvance(dim1)
-    def d2(dim1: Int, dim2: Int): FloatBuffer = getAndAdvance(dim1.toLong * dim2)
-    def d3(dim1: Int, dim2: Int, dim3: Int): FloatBuffer = getAndAdvance(dim1.toLong * dim2 * dim3)
-
-    val tokenEmbeddingTable: FloatBuffer = d2(config.vocabSize, config.dim)
-    val rms_att_weight: FloatBuffer = d2(config.nLayers, config.dim)
-    val wq: FloatBuffer = d3(config.nLayers, config.dim, config.dim)
-    val wk: FloatBuffer = d3(config.nLayers, config.dim, config.dim)
-    val wv: FloatBuffer = d3(config.nLayers, config.dim, config.dim)
-    val wo: FloatBuffer = d3(config.nLayers, config.dim, config.dim)
-    val rms_ffn_weight: FloatBuffer = d2(config.nLayers, config.dim)
-    val w1: FloatBuffer = d3(config.nLayers, config.hiddenDim, config.dim)
-    val w2: FloatBuffer = d3(config.nLayers, config.dim, config.hiddenDim)
-    val w3: FloatBuffer = d3(config.nLayers, config.hiddenDim, config.dim)
-    val rms_final_weight: FloatBuffer = d1(config.dim)
-    val headSize = config.dim / config.nHeads
-    val freq_cis_real: FloatBuffer = d2(config.seqLen, headSize / 2)
-    val freq_cis_imag: FloatBuffer = d2(config.seqLen, headSize / 2)
-  }
-}
-
-/**
+ * A one-to-one translation from llama2.c C code to primitive Scala code.
+ *
  * @param x input
  * @param xb input with rmsnorm applied
  * @param xb2 input with rmsnorm applied twice
@@ -115,7 +18,9 @@ object Weights {
  * @param keyCache key cache for multiquery
  * @param valueCache value cache for multiquery
  */
-class RunState(
+class Llama2SimpleTransformer(
+    config:         Config,
+    weights:        Weights,
     val x:          Array[Float],
     val xb:         Array[Float],
     val xb2:        Array[Float],
@@ -128,7 +33,7 @@ class RunState(
     val logits:     Array[Float],
     val keyCache:   Array[Float],
     val valueCache: Array[Float]
-) {
+) extends Llama2Transformer {
   val writer = new java.io.PrintWriter(new File("output.txt"))
   def println(str: String): Unit = {
     //Console.println(str)
@@ -141,7 +46,7 @@ class RunState(
     //arr.zipWithIndex.foreach { case (x, i) => println(f"$name%s $i%5d $x%f") }
   }
 
-  def transformer(token: Int, pos: Int, config: Config, weights: Weights): Unit = {
+  def step(token: Int, pos: Int): Array[Float] = {
     import config._
     import weights._
 
@@ -336,6 +241,8 @@ class RunState(
 
     // classifier into logits
     matmul(logits, x, tokenEmbeddingTable, dim, vocabSize)
+
+    logits
   }
 
   def extractRow(dest: Array[Float], src: Array[Float], loff: Int, pos: Int, dim: Int): Unit =
@@ -443,10 +350,13 @@ class RunState(
     }
   }
 }
-object RunState {
-  def init(config: Config): RunState = {
+
+object Llama2SimpleTransformer {
+  def init(config: Config, weights: Weights): Llama2Transformer = {
     import config._
-    new RunState(
+    new Llama2SimpleTransformer(
+      config = config,
+      weights = weights,
       x = new Array[Float](dim),
       xb = new Array[Float](dim),
       xb2 = new Array[Float](dim),
@@ -461,91 +371,4 @@ object RunState {
       valueCache = new Array[Float](config.nLayers * seqLen * dim)
     )
   }
-}
-
-object Llama2Main extends App {
-  val checkpointFile = new File("stories15M.bin")
-  val tokenizerFile = new File("tokenizer.bin")
-
-  val ConfigSize = 4 * 7
-
-  def readConfig(checkpoint: File): Config = {
-    val fis = new FileInputStream(checkpoint)
-
-    def readInt(): Int = {
-      val b1 = fis.read()
-      val b2 = fis.read()
-      val b3 = fis.read()
-      val b4 = fis.read()
-      b1 | (b2 << 8) | (b3 << 16) | (b4 << 24)
-    }
-
-    Config(
-      dim = readInt(),
-      hiddenDim = readInt(),
-      nLayers = readInt(),
-      nHeads = readInt(),
-      nKvHeads = readInt(),
-      vocabSize = readInt(),
-      seqLen = readInt()
-    )
-  }
-
-  def readVocab(config: Config, tokenizerFile: File): Vocab = {
-    val fis = new FileInputStream(tokenizerFile)
-
-    def readInt(): Int = {
-      val b1 = fis.read()
-      val b2 = fis.read()
-      val b3 = fis.read()
-      val b4 = fis.read()
-      b1 | (b2 << 8) | (b3 << 16) | (b4 << 24)
-    }
-
-    def readFloat(): Float = java.lang.Float.intBitsToFloat(readInt())
-
-    val maxTokenLength = readInt()
-    val tokens =
-      (0 until config.vocabSize).map { i =>
-        val score = readFloat()
-        val len = readInt()
-        val bytes = new Array[Byte](len)
-        fis.read(bytes)
-        (new String(bytes), score)
-      }
-    Vocab(tokens)
-  }
-  def readWeights(config: Config, checkpointFile: File): Weights =
-    Weights(config, checkpointFile)
-
-  val config = readConfig(checkpointFile)
-  val vocab = readVocab(config, tokenizerFile)
-  val weights = readWeights(config, checkpointFile)
-
-  def run(): Unit = {
-    val state = RunState.init(config)
-    val steps = 256
-
-    var pos = 0
-    var token = 1
-    var next = 0
-    val start = System.nanoTime()
-    while (pos < steps) {
-      state.transformer(token, pos, config, weights)
-      next = state.logits.zipWithIndex.maxBy(_._1)._2 // argmax
-      val tok = vocab.tokenScores(next)._1
-      val tokenStr = if (token == 1 && tok == " ") tok.drop(1) else tok
-      print(tokenStr)
-      Console.flush()
-      token = next
-      pos += 1
-    }
-    println()
-
-    val end = System.nanoTime()
-    val lastedNanos = end - start
-    val tokensPerSecond = steps.toFloat / lastedNanos * 1e9
-    println(f"$tokensPerSecond%5.2f tokens per second")
-  }
-  while (true) run()
 }
