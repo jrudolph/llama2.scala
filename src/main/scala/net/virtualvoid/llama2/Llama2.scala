@@ -1,54 +1,6 @@
 package net.virtualvoid.llama2
 
-import java.io.{ File, FileInputStream, RandomAccessFile }
-import java.nio.{ ByteOrder, FloatBuffer }
-import java.nio.channels.FileChannel
-
-/**
- * @param dim transformer dimension
- * @param hiddenDim for ffn layers
- * @param nLayers number of layers
- * @param nHeads number of query heads
- * @param nKvHeads number of key/value heads (can be < query heads because of multiquery)
- * @param vocabSize vocabulary size, usually 256 (byte-level)
- * @param seqLen max sequence length
- */
-case class Config(
-    dim:       Int,
-    hiddenDim: Int,
-    nLayers:   Int,
-    nHeads:    Int,
-    nKvHeads:  Int,
-    vocabSize: Int,
-    seqLen:    Int,
-    eps:       Float = 1e-5f
-) {
-  def headSize: Int = dim / nHeads
-}
-object Config {
-  val HeaderSize = 7 * 4
-  def fromFile(checkpoint: File): Config = {
-    val fis = new FileInputStream(checkpoint)
-
-    def readInt(): Int = {
-      val b1 = fis.read()
-      val b2 = fis.read()
-      val b3 = fis.read()
-      val b4 = fis.read()
-      b1 | (b2 << 8) | (b3 << 16) | (b4 << 24)
-    }
-
-    Config(
-      dim = readInt(),
-      hiddenDim = readInt(),
-      nLayers = readInt(),
-      nHeads = readInt(),
-      nKvHeads = readInt(),
-      vocabSize = readInt(),
-      seqLen = readInt()
-    )
-  }
-}
+import java.io.{ File, FileInputStream }
 
 case class Vocab(
     tokenScores: Seq[(String, Float)]
@@ -77,69 +29,6 @@ object Vocab {
         (new String(bytes), score)
       }
     Vocab(tokens)
-  }
-}
-
-trait Weights {
-  def tokenEmbeddingTable: Tensor2D
-  def rms_att_weight: Tensor2D
-  def wq: Tensor3D
-  def wk: Tensor3D
-  def wv: Tensor3D
-  def wo: Tensor3D
-  def rms_ffn_weight: Tensor2D
-  def w1: Tensor3D
-  def w2: Tensor3D
-  def w3: Tensor3D
-  def rms_final_weight: Tensor1D
-  def freq_cis_real: Tensor2D
-  def freq_cis_imag: Tensor2D
-}
-object Weights {
-  def fromFile(config: Config, checkpointFile: File): Weights = {
-    // memory map the file and setup the weight buffers
-    val raf = new RandomAccessFile(checkpointFile, "r")
-    val buffer = raf.getChannel.map(FileChannel.MapMode.READ_ONLY, 0, raf.length)
-    buffer.order(ByteOrder.LITTLE_ENDIAN)
-    buffer.position(Config.HeaderSize)
-    val floatBuffer = buffer.asFloatBuffer()
-    Weights(config, floatBuffer)
-  }
-
-  def apply(config: Config, buffer: FloatBuffer): Weights = new Weights {
-    def d1(dim1: Int): Tensor1D = {
-      val res = buffer.slice()
-      res.limit(dim1)
-      buffer.position(buffer.position() + dim1)
-      Tensor1D(res, dim1)
-    }
-    def d2(dim1: Int, dim2: Int): Tensor2D = {
-      val res = buffer.slice()
-      res.limit(dim1 * dim2)
-      buffer.position(buffer.position() + dim1 * dim2)
-      Tensor2D(res, dim1, dim2)
-    }
-    def d3(dim1: Int, dim2: Int, dim3: Int): Tensor3D = {
-      val res = buffer.slice()
-      res.limit(dim1 * dim2 * dim3)
-      buffer.position(buffer.position() + dim1 * dim2 * dim3)
-      Tensor3D(res, dim1, dim2, dim3)
-    }
-
-    val tokenEmbeddingTable = d2(config.vocabSize, config.dim)
-    val rms_att_weight = d2(config.nLayers, config.dim)
-    val wq = d3(config.nLayers, config.dim, config.dim)
-    val wk = d3(config.nLayers, config.dim, config.dim)
-    val wv = d3(config.nLayers, config.dim, config.dim)
-    val wo = d3(config.nLayers, config.dim, config.dim)
-    val rms_ffn_weight = d2(config.nLayers, config.dim)
-    val w1 = d3(config.nLayers, config.hiddenDim, config.dim)
-    val w2 = d3(config.nLayers, config.dim, config.hiddenDim)
-    val w3 = d3(config.nLayers, config.hiddenDim, config.dim)
-    val rms_final_weight = d1(config.dim)
-    val headSize = config.dim / config.nHeads
-    val freq_cis_real = d2(config.seqLen, headSize / 2)
-    val freq_cis_imag = d2(config.seqLen, headSize / 2)
   }
 }
 
@@ -174,7 +63,6 @@ class RunState(
     val valueCache: Tensor3D // layer, seqLength, dim
 ) {
   import config._
-  import weights._
 
   val writer = new java.io.PrintWriter(new File("output.txt"))
   def println(str: String): Unit = {
