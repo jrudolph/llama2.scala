@@ -8,6 +8,7 @@ lazy val llama2 =
     .in(file("."))
     .settings(
       Seq(
+        libraryDependencies += "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4",
         scalaVersion := scalaV
       )
     )

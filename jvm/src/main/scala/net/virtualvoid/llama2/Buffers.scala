@@ -25,7 +25,11 @@ object Buffers {
     def d1(dim1: Int): Tensor1D = Tensor1D(next(dim1), dim1)
     def d2(dim1: Int, dim2: Int): Tensor2D = Tensor2D(next(dim1 * dim2), dim1, dim2)
     def d3(dim1: Int, dim2: Int, dim3: Int): Tensor3D = {
-      val elements = for (i <- 0 until dim1) yield d2(dim2, dim3).quantizeQ8
+      import scala.collection.parallel.CollectionConverters._
+      val elements =
+        (0 until dim1)
+          .map(_ => d2(dim2, dim3))
+          .par.map(_.quantizeQ8).seq
 
       new Tensor3D {
         override def size0: Int = dim1
