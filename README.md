@@ -28,7 +28,7 @@ Current numbers on my AMD Ryzen 7 4800H laptop:
 | llama2.c single-thread                                        | 65                | 1.0x    |
 | llama2.c multi-thread (OMP)                                   | ~350              | 5.5x    |
 | Llama2SimpleTransformer on scala-native 0.4.14 vanilla        | 14                | 0.22x   |
-| Llama2SimpleTransformer on scala-native 0.4.14 (native mmaps) | 80                | 0.77x   |
+| Llama2SimpleTransformer on scala-native 0.4.14 (native mmaps) | 50                | 0.77x   |
 | Llama2SimpleTransformer on OpenJDK 11 single-thread           | 50                | 0.77x   |
 | Llama2SimpleTransformer on GraalVM JDK 17 single-thread       | 61                | 0.94x   |
 
