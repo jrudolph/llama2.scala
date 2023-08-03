@@ -16,7 +16,7 @@ object Llama2Main extends App {
   val vocab = Vocab.fromFile(config, tokenizerFile)
   val weights = Weights.fromFile(config, checkpointFile)
 
-  val useTensor = false
+  val useTensor = true
   val transformer: Llama2Transformer =
     if (useTensor)
       Llama2TensorTransformer.init(config, weights)
