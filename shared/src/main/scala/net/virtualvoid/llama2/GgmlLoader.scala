@@ -1,6 +1,6 @@
 package net.virtualvoid.llama2
 
-import java.io.{File, RandomAccessFile}
+import java.io.{ File, RandomAccessFile }
 import java.nio.ByteOrder
 import java.nio.channels.FileChannel.MapMode
 

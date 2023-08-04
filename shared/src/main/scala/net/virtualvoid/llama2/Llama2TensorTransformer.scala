@@ -43,15 +43,17 @@ class Llama2TensorTransformer(
   def println(f: Float): Unit = println(f.toString)
 
   def trace1d(name: String, arr: Array[Float]): Unit = {
-    //arr.zipWithIndex.foreach { case (x, i) => println(f"$name%s $i%5d $x%f") }
+    //arr.take(100).zipWithIndex.foreach { case (x, i) => println(f"$name%s $i%5d $x%12.9f") }
   }
 
   def step(token: Int, pos: Int): Array[Float] = {
     import config._
     import weights._
+    println(s"Step $pos token $token")
 
     // copy embedding for token to x
     x := tokenEmbeddingTable(token)
+    trace1d("embedding", x)
 
     // select freq rows for pos
     val freq_cis_real_row = freq_cis_real(pos)
@@ -61,6 +63,10 @@ class Llama2TensorTransformer(
     var l = 0
     while (l < nLayers) {
       println(s"start layer $l")
+
+      val ar = new Array[Float](rms_att_weight(l).size)
+      rms_att_weight(l).copyToArray(ar)
+      trace1d("attention weights", ar)
 
       // attention rmsnorm
       xb := rmsnorm(x, rms_att_weight(l))
