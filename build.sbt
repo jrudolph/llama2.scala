@@ -7,9 +7,10 @@ lazy val llama2 =
     .crossType(CrossType.Full)
     .in(file("."))
     .settings(
-      Seq(
-        scalaVersion := scalaV
-      )
+      scalaVersion := scalaV
+    )
+    .jvmSettings(
+      javacOptions ++= Seq("-h", "c")
     )
     .nativeSettings(
       nativeConfig ~= {

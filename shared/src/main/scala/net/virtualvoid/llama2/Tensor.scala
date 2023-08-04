@@ -193,18 +193,9 @@ object Tensor2D {
     def `@`(v: Tensor1DMut): Op1D = new Op1D {
       override def into(dest: Tensor1DMut): Unit = {
         require(v.size == dim2)
-        val vs = v.toFloatArray
-        var i = 0
-        while (i < dim1) {
-          var j = 0
-          var sum = 0.0f
-          while (j < dim2) {
-            sum += floatBuffer.get(i * dim2 + j) * vs(j)
-            j += 1
-          }
-          dest(i) = sum
-          i += 1
-        }
+        require(dest.size == dim1)
+
+        VectMult.matMul(floatBuffer, v, dest)
       }
     }
 
