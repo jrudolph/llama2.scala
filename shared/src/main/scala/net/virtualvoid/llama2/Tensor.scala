@@ -392,10 +392,47 @@ object Tensor2D {
 
       new Tensor2D {
         def size0: Int = dim1
-
         def size1: Int = dim2
 
-        def apply(i: Int): Tensor1D = ???
+        def apply(i: Int): Tensor1D = new Tensor1D {
+          def size: Int = dim2
+
+          def copyToArray(dest: Array[Float], offset: Int): Unit = {
+            //println(s"dest.length: ${dest.length} offset: $offset size: $size")
+            require(dest.length >= offset + size)
+            val numBlocksV = size / K
+            val blockOffset = i * size / K
+
+            var j = 0
+            while (j < numBlocksV) {
+              val blockId = blockOffset + j
+              val factor = quantizeFactor(blockId)
+
+              var k = 0
+              while (k < K / 2) {
+                //val idx = i * size / 2 + j * K / 2 + k
+                val e = quantized(i * dim2 / 2 + j * K / 2 + k)
+
+                val x0 = (e & 0x0f) - 8
+                val x1 = ((e & 0xf0) >> 4) - 8
+
+                dest(offset + j * K + k) = x0 * factor
+                dest(offset + j * K + k + K / 2) = x1 * factor
+
+                //println(f"idx: $idx%5d e: $e%3d x0: $x0%3d x1: $x1%3d factor: $factor%1.5f ${dest(offset + j * K + k)}")
+
+                k += 1
+              }
+
+              //???
+              j += 1
+            }
+          }
+
+          def toFloatBuffer: FloatBuffer = ???
+
+          def ∘(other: Tensor1DMut): Op1D = ???
+        }
 
         def `@`(v: Tensor1DMut): Op1D = { dest =>
           val arr = v.toFloatArray
