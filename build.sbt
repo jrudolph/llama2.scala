@@ -7,6 +7,7 @@ lazy val llama2 =
     .crossType(CrossType.Full)
     .in(file("."))
     .settings(
+      libraryDependencies += "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4",
       scalaVersion := scalaV
     )
     .jvmSettings(
