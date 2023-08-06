@@ -186,3 +186,57 @@ JNIEXPORT void JNICALL Java_net_virtualvoid_llama2_VectMult_matMul3
     (*env)->ReleasePrimitiveArrayCritical(env, dest, desta, 0);
     (*env)->ReleasePrimitiveArrayCritical(env, v, va, 0);
 }
+
+JNIEXPORT void JNICALL Java_net_virtualvoid_llama2_VectMult_matMulQ8
+  (JNIEnv * env, jclass, jbyteArray quantizedA, jfloatArray quantizedFactor, jbyteArray quantizedV, jfloatArray quantizedFactorV, jfloatArray dest) {
+    jint dim1 = (*env)->GetArrayLength(env, dest);
+    jint dim2 = (*env)->GetArrayLength(env, quantizedV);
+    int8_t *qa = (*env)->GetPrimitiveArrayCritical(env, quantizedA, 0);
+    float *qaf = (*env)->GetPrimitiveArrayCritical(env, quantizedFactor, 0);
+    int8_t *qv = (*env)->GetPrimitiveArrayCritical(env, quantizedV, 0);
+    float *qvf = (*env)->GetPrimitiveArrayCritical(env, quantizedFactorV, 0);
+    float *desta = (*env)->GetPrimitiveArrayCritical(env, dest, 0);
+
+    int K = 32;
+    int numBlocksV = dim2 / K;
+    for (int i = 0; i < dim1; i++) {
+        float sum = 0.0f;
+        for (int j = 0; j < numBlocksV; j++) {
+            int sumb = 0;
+            for (int k = 0; k < K; k++) {
+                sumb += qa[i * dim2 + j * K + k] * qv[j * K + k];
+                //if(i == 0 && j == 0)
+                //    printf("i=%d, j=%d, k=%d, sumb=%d qa=%d qv=%d\n", i, j, k, sumb, i * dim2 + j * K + k, qv[j * K + k]);
+            }
+
+            sum += ((float)sumb) * qaf[i * dim2 / K + j] * qvf[j];
+        }
+        desta[i] = sum;
+    }
+//  var i = 0
+//  while (i < dim1) {
+//    var j = 0
+//    var sum = 0.0f
+//    require(numBlocksV * 32 == dim2)
+//    while (j < numBlocksV) {
+//      var sumq = 0
+//      var k = 0
+//      while (k < K) {
+//        sumq += quantized(i * dim2 + j * K + k) * quantizedV(j * K + k)
+//        k += 1
+//      }
+//      sum += sumq.toFloat * quantizeFactor(i * dim2 / K + j) * quantizeVFactor(j)
+//
+//      j += 1
+//    }
+//
+//    dest(i) = sum
+//    i += 1
+//  }
+
+    (*env)->ReleasePrimitiveArrayCritical(env, dest, desta, 0);
+    (*env)->ReleasePrimitiveArrayCritical(env, quantizedFactorV, qvf, 0);
+    (*env)->ReleasePrimitiveArrayCritical(env, quantizedV, qv, 0);
+    (*env)->ReleasePrimitiveArrayCritical(env, quantizedFactor, qaf, 0);
+    (*env)->ReleasePrimitiveArrayCritical(env, quantizedA, qa, 0);
+}

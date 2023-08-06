@@ -298,17 +298,20 @@ object Tensor2D {
             }
           }
 
-          var i = 0
+          //val dest2 = new Array[Float](dim1)
+          VectMult.matMulQ8(quantized, quantizeFactor, quantizedV, quantizeVFactor, dest)
+          /*var i = 0
           while (i < dim1) {
             var j = 0
             var sum = 0.0f
-            var sum2 = 0f
             require(numBlocksV * 32 == dim2)
             while (j < numBlocksV) {
               var sumq = 0
               var k = 0
               while (k < K) {
                 sumq += quantized(i * dim2 + j * K + k) * quantizedV(j * K + k)
+                //if (i == 0 && j == 0)
+                //  println(f"i: $i j: $j k: $k sumq: $sumq")
                 k += 1
               }
               sum += sumq.toFloat * quantizeFactor(i * dim2 / K + j) * quantizeVFactor(j)
@@ -319,6 +322,9 @@ object Tensor2D {
             dest(i) = sum
             i += 1
           }
+          dest.toFloatArray.zip(dest2).take(10).foreach(println)
+          ???*/
+
         }
 
         def toFloatArray: Array[Float] = ???

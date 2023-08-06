@@ -8,4 +8,6 @@ public class VectMult {
     }
 
     public static native void matMul(java.nio.FloatBuffer A, float[] v, float[] dest);
+
+    public static native void matMulQ8(byte[] quantizedA, float[] quantizedFactorA, byte[] quantizedV, float[] quantizedFactorV, float[] dest);
 }
