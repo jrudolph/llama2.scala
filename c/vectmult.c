@@ -209,24 +209,27 @@ void matmulQ8_avx2(int8_t *qa, float *qaf, int8_t *qv, float *qvf, float *desta,
     int K = 32;
     int numBlocksV = dim2 / K;
     for (int i = 0; i < dim1; i++) {
+        // keep block sums vectorized
         __m256 sv = _mm256_setzero_ps();
-        for (int j = 0; j < numBlocksV; j++) {
+        for (int j = 0; j < numBlocksV; j++) { // assumes K = 32 = number of lanes in m256i
             __m256 f = _mm256_set1_ps(qaf[i * dim2 / K + j] * qvf[j]);
             __m256i a = _mm256_loadu_si256(qa + i * dim2 + j * K);
             __m256i v = _mm256_loadu_si256(qv + j * K);
 
-            // use sign epi to get the sign of each byte
+            // take absolute value of a and propagate result sign to v2 (maddubs works with unsigned * signed)
             __m256i a2 = _mm256_sign_epi8(a, a);
             __m256i v2 = _mm256_sign_epi8(v, a);
 
+            // sum with saturation to i16
             __m256i s = _mm256_maddubs_epi16(a2, v2);
 
-            // sum the 16-bit integers
+            // sum the 16-bit integers to 32-bit integers
             __m256i s2 = _mm256_madd_epi16(s, _mm256_set1_epi16(1));
             __m256 s3 = _mm256_cvtepi32_ps(s2);
             // scale with the factor
             sv = _mm256_fmadd_ps(f, s3, sv);
         }
+        // reduce at the end
         desta[i] = _mm256_reduce_add_ps(sv);
     }
 }
