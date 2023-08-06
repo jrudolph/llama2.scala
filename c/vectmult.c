@@ -187,20 +187,23 @@ JNIEXPORT void JNICALL Java_net_virtualvoid_llama2_VectMult_matMul3
     (*env)->ReleasePrimitiveArrayCritical(env, v, va, 0);
 }
 
-void matmulQ8(int8_t *qa, float *qaf, int8_t *qv, float *qvf, float *desta, int dim1, int dim2) {
+void matmulQ8(const int8_t *restrict qa, const float *restrict qaf, const int8_t *restrict qv, const float *restrict qvf, float *restrict desta, const int dim1, const int dim2) {
     int K = 32;
     int numBlocksV = dim2 / K;
     for (int i = 0; i < dim1; i++) {
+        int8_t * a = qa + i * dim2;
+        float *af = qaf + i * dim2 / K;
+
         float sum = 0.0f;
         for (int j = 0; j < numBlocksV; j++) {
             int sumb = 0;
             for (int k = 0; k < K; k++) {
-                sumb += qa[i * dim2 + j * K + k] * qv[j * K + k];
+                sumb += a[j * K + k] * qv[j * K + k];
                 //if(i == 0 && j == 0)
                 //    printf("i=%d, j=%d, k=%d, sumb=%d qa=%d qv=%d\n", i, j, k, sumb, i * dim2 + j * K + k, qv[j * K + k]);
             }
 
-            sum += ((float)sumb) * qaf[i * dim2 / K + j] * qvf[j];
+            sum += ((float)sumb) * af[j] * qvf[j];
         }
         desta[i] = sum;
     }
