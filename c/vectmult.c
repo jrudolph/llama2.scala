@@ -187,16 +187,7 @@ JNIEXPORT void JNICALL Java_net_virtualvoid_llama2_VectMult_matMul3
     (*env)->ReleasePrimitiveArrayCritical(env, v, va, 0);
 }
 
-JNIEXPORT void JNICALL Java_net_virtualvoid_llama2_VectMult_matMulQ8
-  (JNIEnv * env, jclass, jbyteArray quantizedA, jfloatArray quantizedFactor, jbyteArray quantizedV, jfloatArray quantizedFactorV, jfloatArray dest) {
-    jint dim1 = (*env)->GetArrayLength(env, dest);
-    jint dim2 = (*env)->GetArrayLength(env, quantizedV);
-    int8_t *qa = (*env)->GetPrimitiveArrayCritical(env, quantizedA, 0);
-    float *qaf = (*env)->GetPrimitiveArrayCritical(env, quantizedFactor, 0);
-    int8_t *qv = (*env)->GetPrimitiveArrayCritical(env, quantizedV, 0);
-    float *qvf = (*env)->GetPrimitiveArrayCritical(env, quantizedFactorV, 0);
-    float *desta = (*env)->GetPrimitiveArrayCritical(env, dest, 0);
-
+void matmulQ8(int8_t *qa, float *qaf, int8_t *qv, float *qvf, float *desta, int dim1, int dim2) {
     int K = 32;
     int numBlocksV = dim2 / K;
     for (int i = 0; i < dim1; i++) {
@@ -213,26 +204,44 @@ JNIEXPORT void JNICALL Java_net_virtualvoid_llama2_VectMult_matMulQ8
         }
         desta[i] = sum;
     }
-//  var i = 0
-//  while (i < dim1) {
-//    var j = 0
-//    var sum = 0.0f
-//    require(numBlocksV * 32 == dim2)
-//    while (j < numBlocksV) {
-//      var sumq = 0
-//      var k = 0
-//      while (k < K) {
-//        sumq += quantized(i * dim2 + j * K + k) * quantizedV(j * K + k)
-//        k += 1
-//      }
-//      sum += sumq.toFloat * quantizeFactor(i * dim2 / K + j) * quantizeVFactor(j)
-//
-//      j += 1
-//    }
-//
-//    dest(i) = sum
-//    i += 1
-//  }
+}
+void matmulQ8_avx2(int8_t *qa, float *qaf, int8_t *qv, float *qvf, float *desta, int dim1, int dim2) {
+    int K = 32;
+    int numBlocksV = dim2 / K;
+    for (int i = 0; i < dim1; i++) {
+        __m256 sv = _mm256_setzero_ps();
+        for (int j = 0; j < numBlocksV; j++) {
+            __m256 f = _mm256_set1_ps(qaf[i * dim2 / K + j] * qvf[j]);
+            __m256i a = _mm256_loadu_si256(qa + i * dim2 + j * K);
+            __m256i v = _mm256_loadu_si256(qv + j * K);
+
+            // use sign epi to get the sign of each byte
+            __m256i a2 = _mm256_sign_epi8(a, a);
+            __m256i v2 = _mm256_sign_epi8(v, a);
+
+            __m256i s = _mm256_maddubs_epi16(a2, v2);
+
+            // sum the 16-bit integers
+            __m256i s2 = _mm256_madd_epi16(s, _mm256_set1_epi16(1));
+            __m256 s3 = _mm256_cvtepi32_ps(s2);
+            // scale with the factor
+            sv = _mm256_fmadd_ps(f, s3, sv);
+        }
+        desta[i] = _mm256_reduce_add_ps(sv);
+    }
+}
+
+JNIEXPORT void JNICALL Java_net_virtualvoid_llama2_VectMult_matMulQ8
+  (JNIEnv * env, jclass, jbyteArray quantizedA, jfloatArray quantizedFactor, jbyteArray quantizedV, jfloatArray quantizedFactorV, jfloatArray dest) {
+    jint dim1 = (*env)->GetArrayLength(env, dest);
+    jint dim2 = (*env)->GetArrayLength(env, quantizedV);
+    int8_t *qa = (*env)->GetPrimitiveArrayCritical(env, quantizedA, 0);
+    float *qaf = (*env)->GetPrimitiveArrayCritical(env, quantizedFactor, 0);
+    int8_t *qv = (*env)->GetPrimitiveArrayCritical(env, quantizedV, 0);
+    float *qvf = (*env)->GetPrimitiveArrayCritical(env, quantizedFactorV, 0);
+    float *desta = (*env)->GetPrimitiveArrayCritical(env, dest, 0);
+
+    matmulQ8_avx2(qa, qaf, qv, qvf, desta, dim1, dim2);
 
     (*env)->ReleasePrimitiveArrayCritical(env, dest, desta, 0);
     (*env)->ReleasePrimitiveArrayCritical(env, quantizedFactorV, qvf, 0);
