@@ -19,16 +19,16 @@ import java.io.File
 class Llama2TensorTransformer(
     val config: Config)(
     weights:        Weights[config.dim.type, config.hiddenDim.type, config.nLayers.type, config.nHeads.type, config.vocabSize.type, config.seqLen.type, config.halfHeadSize.type],
-    val x:          Tensor1DMut, // dim
-    val xb:         Tensor1DMut, // dim
-    val xb2:        Tensor1DMut, // dim
-    val hb:         Tensor1DMut, // hiddenDim
-    val hb2:        Tensor1DMut, // hiddenDim
-    val q:          Tensor1DMut, // dim
-    val k:          Tensor1DMut, // dim
-    val v:          Tensor1DMut, // dim
+    val x:          Tensor1DMut[config.dim.type], // dim
+    val xb:         Tensor1DMut[config.dim.type], // dim
+    val xb2:        Tensor1DMut[config.dim.type], // dim
+    val hb:         Tensor1DMut[config.hiddenDim.type], // hiddenDim
+    val hb2:        Tensor1DMut[config.hiddenDim.type], // hiddenDim
+    val q:          Tensor1DMut[config.dim.type], // dim
+    val k:          Tensor1DMut[config.dim.type], // dim
+    val v:          Tensor1DMut[config.dim.type], // dim
     val att:        Tensor2DMut[config.nHeads.type, config.seqLen.type], // nHeads, seqLength
-    val logits:     Tensor1DMut, // vocabSize
+    val logits:     Tensor1DMut[config.vocabSize.type], // vocabSize
     val keyCache:   Tensor3DMut[config.nLayers.type, config.seqLen.type, config.dim.type], // layer, seqLength, dim
     val valueCache: Tensor3DMut[config.nLayers.type, config.seqLen.type, config.dim.type] // layer, seqLength, dim
 ) extends Llama2Transformer {
@@ -237,7 +237,7 @@ class Llama2TensorTransformer(
     logits
   }
 
-  def softmax(x: Tensor1DMut): Unit = {
+  def softmax[d <: Int](x: Tensor1DMut[d]): Unit = {
     // find max value
     val max = x.max
 
@@ -248,7 +248,7 @@ class Llama2TensorTransformer(
     x /= x.sum
   }
 
-  def rmsnorm(x: Tensor1DMut, weight: Tensor1D): Op1D = { dest =>
+  def rmsnorm[d <: Int](x: Tensor1DMut[d], weight: Tensor1D[d]): Op1D[d] = { dest =>
     // calculate sum of squares
     val sum = x * x
 

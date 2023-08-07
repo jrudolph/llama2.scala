@@ -15,7 +15,7 @@ trait Weights[dim <: Int, hiddenDim <: Int, nLayers <: Int, nHeads <: Int, vocab
   def w1: Tensor3D[nLayers, hiddenDim, dim]
   def w2: Tensor3D[nLayers, dim, hiddenDim]
   def w3: Tensor3D[nLayers, hiddenDim, dim]
-  def rms_final_weight: Tensor1D
+  def rms_final_weight: Tensor1D[dim]
   def freq_cis_real: Tensor2D[seqLen, halfHeadSize]
   def freq_cis_imag: Tensor2D[seqLen, halfHeadSize]
   def wcls: Tensor2D[vocabSize, dim]
@@ -38,7 +38,6 @@ object Weights {
     val w2 = d3(config.nLayers, config.dim, config.hiddenDim)
     val w3 = d3(config.nLayers, config.hiddenDim, config.dim)
     val rms_final_weight = d1(config.dim)
-    val headSize = config.dim / config.nHeads
     val freq_cis_real = d2(config.seqLen, config.halfHeadSize)
     val freq_cis_imag = d2(config.seqLen, config.halfHeadSize)
     val wcls = if (config.sharedWeights) tokenEmbeddingTable else d2(config.vocabSize, config.dim)
