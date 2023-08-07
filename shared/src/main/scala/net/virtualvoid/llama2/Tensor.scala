@@ -537,7 +537,9 @@ object Tensor2D {
             }
           }
 
-          var i = 0
+          VectMult.matMulQ4(quantized, quantizeFactor, quantizedV, quantizeVFactor, dest)
+
+          /*var i = 0
           while (i < dim1) {
             var j = 0
             var sum = 0.0f
@@ -590,7 +592,7 @@ object Tensor2D {
 
             dest(i) = sum
             i += 1
-          }
+          }*/
         }
 
         def toFloatArray: Array[Float] = ???

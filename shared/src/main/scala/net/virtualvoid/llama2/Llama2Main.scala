@@ -29,10 +29,10 @@ object Llama2Main extends App {
       Llama2SimpleTransformer.init(config, weights)
 
   def run(): Unit = {
-    val steps = 50
+    val steps = 256
 
     var pos = 0
-    var token = 1
+    var token = 1256
     var next = 0
     val start = System.nanoTime()
     while (pos < steps) {

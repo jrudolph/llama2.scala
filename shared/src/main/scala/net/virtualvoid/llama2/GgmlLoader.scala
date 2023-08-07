@@ -193,6 +193,7 @@ object GgmlLoader {
               def quantizeFactor(idx: Int): Float = {
                 val bufIdx = idx * 18 / 2
                 val fp16d = shortBuffer.get(bufIdx)
+                //println(s"fp16d: $fp16d")
                 val res = fp16Tofp32(fp16d)
                 //println(f"idx: $idx%5d bufIdx: $bufIdx%5d fp16d: $fp16d%4x res: $res%12.9f")
                 res
@@ -233,7 +234,10 @@ object GgmlLoader {
                   }
                 }
 
-                var i = 0
+                //println(f"quantized(0,0): ${quantized(0, 0)}%3d quantizeFactor(0): ${quantizeFactor(0)}%12.9f")
+                VectMult.matMulQ4_buffer(buffer, quantizedV, quantizeVFactor, dest)
+
+                /*var i = 0
                 while (i < dim1) {
                   var j = 0
                   var sum = 0.0f
@@ -287,7 +291,7 @@ object GgmlLoader {
 
                   dest(i) = sum
                   i += 1
-                }
+                }*/
               }
 
               def toFloatArray: Array[Float] = ???

@@ -23,6 +23,22 @@ JNIEXPORT void JNICALL Java_net_virtualvoid_llama2_VectMult_matMul
 JNIEXPORT void JNICALL Java_net_virtualvoid_llama2_VectMult_matMulQ8
   (JNIEnv *, jclass, jbyteArray, jfloatArray, jbyteArray, jfloatArray, jfloatArray);
 
+/*
+ * Class:     net_virtualvoid_llama2_VectMult
+ * Method:    matMulQ4
+ * Signature: ([B[F[B[F[F)V
+ */
+JNIEXPORT void JNICALL Java_net_virtualvoid_llama2_VectMult_matMulQ4
+  (JNIEnv *, jclass, jbyteArray, jfloatArray, jbyteArray, jfloatArray, jfloatArray);
+
+/*
+ * Class:     net_virtualvoid_llama2_VectMult
+ * Method:    matMulQ4_buffer
+ * Signature: (Ljava/nio/Buffer;[B[F[F)V
+ */
+JNIEXPORT void JNICALL Java_net_virtualvoid_llama2_VectMult_matMulQ4_1buffer
+  (JNIEnv *, jclass, jobject, jbyteArray, jfloatArray, jfloatArray);
+
 #ifdef __cplusplus
 }
 #endif
