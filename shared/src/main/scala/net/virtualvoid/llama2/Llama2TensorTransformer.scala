@@ -17,22 +17,22 @@ import java.io.File
  * @param valueCache value cache for multiquery
  */
 class Llama2TensorTransformer(
-    val config: Config)(
-    weights:        Weights[config.dim.type, config.hiddenDim.type, config.nLayers.type, config.nHeads.type, config.vocabSize.type, config.seqLen.type, config.halfHeadSize.type],
-    val x:          Tensor1DMut[config.dim.type], // dim
-    val xb:         Tensor1DMut[config.dim.type], // dim
-    val xb2:        Tensor1DMut[config.dim.type], // dim
-    val hb:         Tensor1DMut[config.hiddenDim.type], // hiddenDim
-    val hb2:        Tensor1DMut[config.hiddenDim.type], // hiddenDim
-    val q:          Tensor1DMut[config.dim.type], // dim
-    val k:          Tensor1DMut[config.dim.type], // dim
-    val v:          Tensor1DMut[config.dim.type], // dim
-    val att:        Tensor2DMut[config.nHeads.type, config.seqLen.type], // nHeads, seqLength
-    val logits:     Tensor1DMut[config.vocabSize.type], // vocabSize
-    val keyCache:   Tensor3DMut[config.nLayers.type, config.seqLen.type, config.dim.type], // layer, seqLength, dim
-    val valueCache: Tensor3DMut[config.nLayers.type, config.seqLen.type, config.dim.type] // layer, seqLength, dim
+    val config:  Config,
+    val weights: Weights)(
+    val x:          Tensor1DMut[weights.dim],
+    val xb:         Tensor1DMut[weights.dim],
+    val xb2:        Tensor1DMut[weights.dim],
+    val hb:         Tensor1DMut[weights.hiddenDim],
+    val hb2:        Tensor1DMut[weights.hiddenDim],
+    val q:          Tensor1DMut[weights.dim],
+    val k:          Tensor1DMut[weights.dim],
+    val v:          Tensor1DMut[weights.dim],
+    val att:        Tensor2DMut[weights.nHeads, weights.seqLen],
+    val logits:     Tensor1DMut[weights.vocabSize],
+    val keyCache:   Tensor3DMut[weights.nLayers, weights.seqLen, weights.dim],
+    val valueCache: Tensor3DMut[weights.nLayers, weights.seqLen, weights.dim]
 ) extends Llama2Transformer {
-  import config._
+  import config.eps
 
   val writer = new java.io.PrintWriter(new File("output.txt"))
   def println(str: String): Unit = {
@@ -47,7 +47,6 @@ class Llama2TensorTransformer(
   }
 
   def step(token: Int, pos: Int): Array[Float] = {
-    import config._
     import weights._
 
     // copy embedding for token to x
@@ -260,23 +259,22 @@ class Llama2TensorTransformer(
   }
 }
 object Llama2TensorTransformer {
-  def init(config: Config, weights: Weights[config.dim.type, config.hiddenDim.type, config.nLayers.type, config.nHeads.type, config.vocabSize.type, config.seqLen.type, config.halfHeadSize.type]): Llama2TensorTransformer = {
-    import config._
-    new Llama2TensorTransformer(
-      config = config)(
-      weights = weights,
-      x = Tensor1DMut.zero(dim),
-      xb = Tensor1DMut.zero(dim),
-      xb2 = Tensor1DMut.zero(dim),
-      hb = Tensor1DMut.zero(hiddenDim),
-      hb2 = Tensor1DMut.zero(hiddenDim),
-      q = Tensor1DMut.zero(dim),
-      k = Tensor1DMut.zero(dim),
-      v = Tensor1DMut.zero(dim),
-      att = Tensor2DMut.zero(nHeads, seqLen),
-      logits = Tensor1DMut.zero(config.vocabSize),
-      keyCache = Tensor3DMut.zero(config.nLayers, seqLen, dim),
-      valueCache = Tensor3DMut.zero(config.nLayers, seqLen, dim)
+  def init(config: Config, weights: Weights): Llama2TensorTransformer = {
+    import weights._
+    new Llama2TensorTransformer(config, weights)(
+      // casting?!? I couldn't figure out how else to do it, I think it has something to do with how opaque types work
+      x = Tensor1DMut.zero(weights.dim).asInstanceOf[Tensor1DMut[weights.dim]],
+      xb = Tensor1DMut.zero(dim).asInstanceOf[Tensor1DMut[weights.dim]],
+      xb2 = Tensor1DMut.zero(dim).asInstanceOf[Tensor1DMut[weights.dim]],
+      hb = Tensor1DMut.zero(hiddenDim).asInstanceOf[Tensor1DMut[weights.hiddenDim]],
+      hb2 = Tensor1DMut.zero(hiddenDim).asInstanceOf[Tensor1DMut[weights.hiddenDim]],
+      q = Tensor1DMut.zero(dim).asInstanceOf[Tensor1DMut[weights.dim]],
+      k = Tensor1DMut.zero(dim).asInstanceOf[Tensor1DMut[weights.dim]],
+      v = Tensor1DMut.zero(dim).asInstanceOf[Tensor1DMut[weights.dim]],
+      att = Tensor2DMut.zero(nHeads, seqLen).asInstanceOf[Tensor2DMut[weights.nHeads, weights.seqLen]],
+      logits = Tensor1DMut.zero(vocabSize).asInstanceOf[Tensor1DMut[weights.vocabSize]],
+      keyCache = Tensor3DMut.zero(nLayers, seqLen, dim).asInstanceOf[Tensor3DMut[weights.nLayers, weights.seqLen, weights.dim]],
+      valueCache = Tensor3DMut.zero(nLayers, seqLen, dim).asInstanceOf[Tensor3DMut[weights.nLayers, weights.seqLen, weights.dim]]
     )
   }
 }

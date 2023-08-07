@@ -4,7 +4,24 @@ import java.io.{ File, RandomAccessFile }
 import java.nio.{ ByteOrder, FloatBuffer }
 import java.nio.channels.FileChannel
 
-trait Weights[dim <: Int, hiddenDim <: Int, nLayers <: Int, nHeads <: Int, vocabSize <: Int, seqLen <: Int, halfHeadSize <: Int] {
+trait Weights {
+  type dim <: Int
+  type hiddenDim <: Int
+  type nLayers <: Int
+  type nHeads <: Int
+  type vocabSize <: Int
+  type seqLen <: Int
+  type headSize <: Int
+  type halfHeadSize <: Int
+  val dim: dim
+  val hiddenDim: hiddenDim
+  val nLayers: nLayers
+  val nHeads: nHeads
+  val vocabSize: vocabSize
+  val seqLen: seqLen
+  val headSize: headSize
+  val halfHeadSize: halfHeadSize
+
   def tokenEmbeddingTable: Tensor2D[vocabSize, dim]
   def rms_att_weight: Tensor2D[nLayers, dim]
   def wq: Tensor3D[nLayers, dim, dim]
@@ -21,10 +38,28 @@ trait Weights[dim <: Int, hiddenDim <: Int, nLayers <: Int, nHeads <: Int, vocab
   def wcls: Tensor2D[vocabSize, dim]
 }
 object Weights {
-  def fromFile(config: Config, checkpointFile: File): Weights[config.dim.type, config.hiddenDim.type, config.nLayers.type, config.nHeads.type, config.vocabSize.type, config.seqLen.type, config.halfHeadSize.type] =
+  def fromFile(config: Config, checkpointFile: File): Weights =
     Weights(config, Buffers.fromFile(checkpointFile, Config.HeaderSize))
 
-  def apply(config: Config, buffers: Buffers): Weights[config.dim.type, config.hiddenDim.type, config.nLayers.type, config.nHeads.type, config.vocabSize.type, config.seqLen.type, config.halfHeadSize.type] = new Weights[config.dim.type, config.hiddenDim.type, config.nLayers.type, config.nHeads.type, config.vocabSize.type, config.seqLen.type, config.halfHeadSize.type] {
+  def apply(config: Config, buffers: Buffers): Weights = new Weights {
+    type dim = config.dim.type
+    type hiddenDim = config.hiddenDim.type
+    type nLayers = config.nLayers.type
+    type nHeads = config.nHeads.type
+    type vocabSize = config.vocabSize.type
+    type seqLen = config.seqLen.type
+    type headSize = config.headSize.type
+    type halfHeadSize = config.halfHeadSize.type
+
+    val dim: config.dim.type = config.dim
+    val hiddenDim: config.hiddenDim.type = config.hiddenDim
+    val nLayers: config.nLayers.type = config.nLayers
+    val nHeads: config.nHeads.type = config.nHeads
+    val vocabSize: config.vocabSize.type = config.vocabSize
+    val seqLen: config.seqLen.type = config.seqLen
+    val headSize: config.headSize.type = config.headSize
+    val halfHeadSize: config.halfHeadSize.type = config.halfHeadSize
+
     import buffers._
 
     val tokenEmbeddingTable = d2(config.vocabSize, config.dim)

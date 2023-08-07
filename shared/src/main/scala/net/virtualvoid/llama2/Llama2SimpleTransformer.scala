@@ -20,7 +20,7 @@ import java.io.File
  */
 class Llama2SimpleTransformer(
     config:         Config,
-    weights:        Weights[_, _, _, _, _, _, _],
+    weights:        Weights,
     val x:          Array[Float],
     val xb:         Array[Float],
     val xb2:        Array[Float],
@@ -47,15 +47,14 @@ class Llama2SimpleTransformer(
   }
 
   def step(token: Int, pos: Int): Array[Float] = {
-    import config._
     import weights._
 
     // copy embedding for token to x
     extractRowFrom2D(x, tokenEmbeddingTable, dim, token)
 
     // select freq rows for pos
-    val freq_cis_real_row = freq_cis_real.duplicate().position(pos * headSize / 2).slice()
-    val freq_cis_imag_row = freq_cis_imag.duplicate().position(pos * headSize / 2).slice()
+    val freq_cis_real_row = freq_cis_real.duplicate().position(pos * halfHeadSize).slice()
+    val freq_cis_imag_row = freq_cis_imag.duplicate().position(pos * halfHeadSize).slice()
 
     // for all layers
     var l = 0
@@ -351,8 +350,8 @@ class Llama2SimpleTransformer(
 }
 
 object Llama2SimpleTransformer {
-  def init(config: Config, weights: Weights[_, _, _, _, _, _, _]): Llama2Transformer = {
-    import config._
+  def init(config: Config, weights: Weights): Llama2Transformer = {
+    import weights._
     new Llama2SimpleTransformer(
       config = config,
       weights = weights,
