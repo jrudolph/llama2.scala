@@ -200,7 +200,7 @@ void matmulQ8(const int8_t *restrict qa, const float *restrict qaf, const int8_t
             for (int k = 0; k < K; k++) {
                 sumb += a[j * K + k] * qv[j * K + k];
                 //if(i == 0 && j == 0)
-                //    printf("i=%d, j=%d, k=%d, sumb=%d qa=%d qv=%d\n", i, j, k, sumb, i * dim2 + j * K + k, qv[j * K + k]);
+                    //printf("i=%d, j=%d, k=%d, sumb=%d qa=%d qv=%d\n", i, j, k, sumb, i * dim2 + j * K + k, qv[j * K + k]);
             }
 
             sum += ((float)sumb) * af[j] * qvf[j];
@@ -208,16 +208,53 @@ void matmulQ8(const int8_t *restrict qa, const float *restrict qaf, const int8_t
         desta[i] = sum;
     }
 }
+
 void matmulQ8_avx2(int8_t *qa, float *qaf, int8_t *qv, float *qvf, float *desta, int dim1, int dim2) {
     int K = 32;
     int numBlocksV = dim2 / K;
-    for (int i = 0; i < dim1; i++) {
+
+    int i;
+    //#pragma omp parallel for private(i) num_threads(4)
+    for (i = 0; i < dim1; i++) {
         // keep block sums vectorized
         __m256 sv = _mm256_setzero_ps();
         for (int j = 0; j < numBlocksV; j++) { // assumes K = 32 = number of lanes in m256i
             __m256 f = _mm256_set1_ps(qaf[i * dim2 / K + j] * qvf[j]);
             __m256i a = _mm256_loadu_si256(qa + i * dim2 + j * K);
             __m256i v = _mm256_loadu_si256(qv + j * K);
+
+            // take absolute value of a and propagate result sign to v2 (maddubs works with unsigned * signed)
+            __m256i a2 = _mm256_sign_epi8(a, a);
+            __m256i v2 = _mm256_sign_epi8(v, a);
+
+            // sum with saturation to i16
+            __m256i s = _mm256_maddubs_epi16(a2, v2);
+
+            // sum the 16-bit integers to 32-bit integers
+            __m256i s2 = _mm256_madd_epi16(s, _mm256_set1_epi16(1));
+            __m256 s3 = _mm256_cvtepi32_ps(s2);
+            // scale with the factor
+            sv = _mm256_fmadd_ps(f, s3, sv);
+        }
+        // reduce at the end
+        desta[i] = _mm256_reduce_add_ps(sv);
+    }
+}
+
+
+void matmulQ8_avx2_aligned(int8_t *qa, float *qaf, int8_t *qv, float *qvf, float *desta, int dim1, int dim2) {
+    int K = 32;
+    int numBlocksV = dim2 / K;
+
+    int i;
+    #pragma omp parallel for private(i) num_threads(8)
+    for (i = 0; i < dim1; i++) {
+        // keep block sums vectorized
+        __m256 sv = _mm256_setzero_ps();
+        for (int j = 0; j < numBlocksV; j++) { // assumes K = 32 = number of lanes in m256i
+            __m256 f = _mm256_set1_ps(qaf[i * dim2 / K + j] * qvf[j]);
+            __m256i a = _mm256_load_si256(qa + i * dim2 + j * K);
+            __m256i v = _mm256_load_si256(qv + j * K);
 
             // take absolute value of a and propagate result sign to v2 (maddubs works with unsigned * signed)
             __m256i a2 = _mm256_sign_epi8(a, a);
@@ -247,11 +284,40 @@ JNIEXPORT void JNICALL Java_net_virtualvoid_llama2_VectMult_matMulQ8
     float *qvf = (*env)->GetPrimitiveArrayCritical(env, quantizedFactorV, 0);
     float *desta = (*env)->GetPrimitiveArrayCritical(env, dest, 0);
 
-    matmulQ8_avx2(qa, qaf, qv, qvf, desta, dim1, dim2);
+    matmulQ8(qa, qaf, qv, qvf, desta, dim1, dim2);
 
     (*env)->ReleasePrimitiveArrayCritical(env, dest, desta, 0);
     (*env)->ReleasePrimitiveArrayCritical(env, quantizedFactorV, qvf, 0);
     (*env)->ReleasePrimitiveArrayCritical(env, quantizedV, qv, 0);
     (*env)->ReleasePrimitiveArrayCritical(env, quantizedFactor, qaf, 0);
     (*env)->ReleasePrimitiveArrayCritical(env, quantizedA, qa, 0);
+}
+
+JNIEXPORT void JNICALL Java_net_virtualvoid_llama2_VectMult_matMulQ8New
+  (JNIEnv *env, jclass, jobject quantizedA, jobject quantizedFactor, jobject quantizedV, jobject quantizedFactorV, jfloatArray dest, jint dim1, jint dim2)
+{
+    int8_t *qa = (*env)->GetDirectBufferAddress(env, quantizedA);
+    float *qaf = (*env)->GetDirectBufferAddress(env, quantizedFactor);
+    int8_t *qv = (*env)->GetDirectBufferAddress(env, quantizedV);
+    float *qvf = (*env)->GetDirectBufferAddress(env, quantizedFactorV);
+    float *desta = (*env)->GetPrimitiveArrayCritical(env, dest, 0);
+
+    matmulQ8_avx2_aligned(qa, qaf, qv, qvf, desta, dim1, dim2);
+
+    (*env)->ReleasePrimitiveArrayCritical(env, dest, desta, 0);
+}
+
+JNIEXPORT jobject JNICALL Java_net_virtualvoid_llama2_VectMult_allocateAligned
+  (JNIEnv *env, jclass, jint size, jint alignment)
+{
+    void *buffer;
+    posix_memalign(&buffer, alignment, size);
+    return (*env)->NewDirectByteBuffer(env, buffer, size);
+}
+
+JNIEXPORT void JNICALL Java_net_virtualvoid_llama2_VectMult_freeAligned
+  (JNIEnv *env, jclass, jobject buf)
+{
+    void *buffer = (*env)->GetDirectBufferAddress(env, buf);
+    free(buffer);
 }

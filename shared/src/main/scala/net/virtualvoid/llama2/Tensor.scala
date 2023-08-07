@@ -1,5 +1,7 @@
 package net.virtualvoid.llama2
 
+import java.nio.ByteOrder
+
 trait Tensor1D {
   def size: Int
 
@@ -226,8 +228,10 @@ object Tensor2D {
 
       val numBlocks = size0 * size1 / K
 
-      val quantized = new Array[Byte](size0 * size1)
-      val quantizeFactor = new Array[Float](numBlocks)
+      val quantized = VectMult.allocateAligned(size0 * size1, 32)
+      val quantizeFactor = VectMult.allocateAligned(numBlocks * 4, 32).order(ByteOrder.LITTLE_ENDIAN).asFloatBuffer()
+      //val quantized = new Array[Byte](size0 * size1)
+      //val quantizeFactor = new Array[Float](numBlocks)
 
       var i = 0
       while (i < numBlocks) {
@@ -243,13 +247,13 @@ object Tensor2D {
         val d = max / ((1 << 7) - 1)
         val id = if (d != 0f) 1.0f / d else 0.0f
 
-        quantizeFactor(i) = d
+        quantizeFactor.put(i, d)
 
         j = 0
         while (j < K) {
           val v = floatBuffer.get(i * K + j)
           val x0 = v * id // scale
-          quantized(i * K + j) = math.round(x0).toByte
+          quantized.put(i * K + j, math.round(x0).toByte)
           //println(f"At ${i * K + j} v: $v%.6f x0: ${x0} quantized: ${quantized(i * K + j)}")
           j += 1
         }
@@ -267,10 +271,11 @@ object Tensor2D {
           val arr = v.toFloatArray
           require(arr.length % K == 0)
 
-          // quantize v as well (it will be used `dim1` times so it is worth it)
-          val quantizedV = new Array[Byte](arr.size)
           val numBlocksV = arr.size / K
-          val quantizeVFactor = new Array[Float](numBlocksV)
+
+          // quantize v as well (it will be used `dim1` times so it is worth it)
+          val quantizedV = VectMult.allocateAligned(arr.length, 32)
+          val quantizeVFactor = VectMult.allocateAligned(numBlocksV * 4, 32).order(ByteOrder.LITTLE_ENDIAN).asFloatBuffer()
 
           {
             var i = 0
@@ -286,11 +291,11 @@ object Tensor2D {
               val d = max / ((1 << 7) - 1)
               val id = if (d != 0f) 1.0f / d else 0.0f
 
-              quantizeVFactor(i) = d
+              quantizeVFactor.put(i, d)
               j = 0
               while (j < K) {
                 val x0 = arr(i * K + j) * id // scale
-                quantizedV(i * K + j) = math.round(x0).toByte
+                quantizedV.put(i * K + j, math.round(x0).toByte)
                 j += 1
               }
 
@@ -299,7 +304,12 @@ object Tensor2D {
           }
 
           //val dest2 = new Array[Float](dim1)
-          VectMult.matMulQ8(quantized, quantizeFactor, quantizedV, quantizeVFactor, dest)
+          val res = VectMult.matMulQ8New(quantized, quantizeFactor, quantizedV, quantizeVFactor, dest, dim1, dim2)
+
+          VectMult.freeAligned(quantizedV)
+          VectMult.freeAligned(quantizeVFactor)
+
+          res
           /*var i = 0
           while (i < dim1) {
             var j = 0
