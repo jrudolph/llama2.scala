@@ -29,7 +29,7 @@ object Buffers {
       val elements =
         (0 until dim1)
           .map(_ => d2(dim2, dim3))
-          .par.map(_.quantizeQ8).seq
+      //.par.map(_.quantizeQ8).seq
 
       new Tensor3D {
         override def size0: Int = dim1

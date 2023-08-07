@@ -27,7 +27,7 @@ object Weights {
   def apply(config: Config, buffers: Buffers): Weights = new Weights {
     import buffers._
 
-    val tokenEmbeddingTable = d2(config.vocabSize, config.dim)
+    val tokenEmbeddingTable = d2(config.vocabSize, config.dim).quantizeQ4
     val rms_att_weight = d2(config.nLayers, config.dim)
     val wq = d3(config.nLayers, config.dim, config.dim)
     val wk = d3(config.nLayers, config.dim, config.dim)
@@ -41,6 +41,7 @@ object Weights {
     val headSize = config.dim / config.nHeads
     val freq_cis_real = d2(config.seqLen, headSize / 2)
     val freq_cis_imag = d2(config.seqLen, headSize / 2)
-    val wcls = if (config.sharedWeights) tokenEmbeddingTable.quantizeQ8 else d2(config.vocabSize, config.dim).quantizeQ8
+    val wcls = if (config.sharedWeights) tokenEmbeddingTable.quantizeQ4 else d2(config.vocabSize, config.dim).quantizeQ4
   }
+
 }
