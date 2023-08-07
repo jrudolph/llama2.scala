@@ -1,37 +1,5 @@
 package net.virtualvoid.llama2
 
-enum Dim {
-  def shape: Seq[Long] = this match {
-    case D1(d1) => Seq(d1)
-    case D2(d1, d2) => Seq(d1, d2)
-    case D3(d1, d2, d3) => Seq(d1, d2, d3)
-    case D4(d1, d2, d3, d4) => Seq(d1, d2, d3, d4)
-  }
-
-  case D1[D1 <: Int](d1: D1)
-  case D2[D1 <: Int, D2 <: Int](d1: D1, d2: D2)
-  case D3[D1 <: Int, D2 <: Int, D3 <: Int](d1: D1, d2: D2, d3: D3)
-  case D4[D1 <: Int, D2 <: Int, D3 <: Int, D4 <: Int](d1: D1, d2: D2, d3: D3, d4: D4)
-}
-object Dim {
-  type Join[dA <: Dim, dB <: Dim] <: Dim = (dA, dB) match {
-    case (D1[a], D1[b]) => D2[a, b]
-    case (D1[a], D2[b, c]) => D3[a, b, c]
-    case (D2[a, b], D1[c]) => D3[a, b, c]
-    case (D2[a, b], D2[c, d]) => D4[a, b, c, d]
-    case (D1[a], D3[b, c, d]) => D4[a, b, c, d]
-    case (D3[a, b, c], D1[d]) => D4[a, b, c, d]
-  }
-  type Drop1[D <: Dim] <: Dim = D match {
-    case D2[a, b] => D1[b]
-    case D3[a, b, c] => D2[b,c]
-    case D4[a, b, c, d] => D3[ b, c, d]
-  }
-
-  def apply(d1: Int): D1[d1.type] = D1(d1)
-  def apply(d1: Int, d2: Int): D2[d1.type, d2.type] = D2(d1, d2)
-}
-
 trait Tensor1D {
   def size: Int
 
@@ -200,9 +168,9 @@ trait Op1D {
   def into(dest: Tensor1DMut): Unit
 }
 
-trait Tensor2D {
-  def size0: Int
-  def size1: Int
+trait Tensor2D[d1 <: Int, d2 <: Int] {
+  def size0: d1
+  def size1: d2
 
   def apply(i: Int): Tensor1D
 
@@ -213,10 +181,10 @@ trait Tensor2D {
 }
 
 object Tensor2D {
-  def apply(fb: FloatBuffer, dim1: Int, dim2: Int): Tensor2D = new Tensor2D {
+  def apply(fb: FloatBuffer, dim1: Int, dim2: Int): Tensor2D[dim1.type, dim2.type] = new Tensor2D[dim1.type, dim2.type] {
     val floatBuffer = fb.duplicate()
-    def size0: Int = dim1
-    def size1: Int = dim2
+    def size0: dim1.type = dim1
+    def size1: dim2.type = dim2
     def apply(i: Int): Tensor1D = {
       val source = floatBuffer.duplicate().position(i * dim2).slice()
       Tensor1D(source, dim2)
@@ -244,22 +212,22 @@ object Tensor2D {
     def toFloatBuffer: FloatBuffer = floatBuffer.duplicate()
   }
 
-  implicit def autoBuffer(t2: Tensor2D): FloatBuffer = t2.toFloatBuffer
-  implicit def autoArray(t2: Tensor2D): Array[Float] = t2.toFloatArray
+  implicit def autoBuffer(t2: Tensor2D[_, _]): FloatBuffer = t2.toFloatBuffer
+  implicit def autoArray(t2: Tensor2D[_, _]): Array[Float] = t2.toFloatArray
 }
 
-trait Tensor2DMut extends Tensor2D {
+trait Tensor2DMut[d1 <: Int, d2 <: Int] extends Tensor2D[d1, d2] {
   def apply(i: Int): Tensor1DMut
 }
 object Tensor2DMut {
-  def zero(dim1: Int, dim2: Int): Tensor2DMut = Tensor2DMut(new Array[Float](dim1 * dim2), dim1, dim2)
+  def zero(dim1: Int, dim2: Int): Tensor2DMut[dim1.type, dim2.type] = Tensor2DMut(new Array[Float](dim1 * dim2), dim1, dim2)
 
-  def apply(fs: Array[Float], dim1: Int, dim2: Int, offset: Int = 0): Tensor2DMut = new Tensor2DMut {
+  def apply(fs: Array[Float], dim1: Int, dim2: Int, offset: Int = 0): Tensor2DMut[dim1.type, dim2.type] = new Tensor2DMut[dim1.type, dim2.type] {
     require(fs.size >= offset + dim1 * dim2)
 
     def floats(i: Int): Float = fs(offset + i)
-    def size0: Int = dim1
-    def size1: Int = dim2
+    def size0: dim1.type = dim1
+    def size1: dim2.type = dim2
 
     def apply(i: Int): Tensor1DMut = Tensor1DMut(fs, dim2, offset = offset + i * dim2)
 
@@ -275,7 +243,7 @@ trait Tensor3D[d1 <: Int, d2 <: Int, d3 <: Int] {
   def size1: d2
   def size2: d3
 
-  def apply(i: Int): Tensor2D
+  def apply(i: Int): Tensor2D[d2, d3]
 
   def toFloatArray: Array[Float]
   def toFloatBuffer: FloatBuffer
@@ -286,7 +254,7 @@ object Tensor3D {
     def size1: dim2.type = dim2
     def size2: dim3.type = dim3
 
-    def apply(i: Int): Tensor2D = {
+    def apply(i: Int): Tensor2D[dim2.type, dim3.type] = {
       val source = floatBuffer.duplicate().position(i * dim2 * dim3).slice()
       Tensor2D(source, dim2, dim3)
     }
@@ -300,7 +268,7 @@ object Tensor3D {
 }
 
 trait Tensor3DMut[d1 <: Int, d2 <: Int, d3 <: Int] extends Tensor3D[d1, d2, d3] {
-  def apply(i: Int): Tensor2DMut
+  def apply(i: Int): Tensor2DMut[d2, d3]
 }
 object Tensor3DMut {
   def zero(dim1: Int, dim2: Int, dim3: Int): Tensor3DMut[dim1.type, dim2.type, dim3.type] = Tensor3DMut(new Array[Float](dim1 * dim2 * dim3), dim1, dim2, dim3)
@@ -312,7 +280,7 @@ object Tensor3DMut {
     def size1: dim2.type = dim2
     def size2: dim3.type = dim3
 
-    def apply(i: Int): Tensor2DMut = Tensor2DMut(floats, dim2, dim3, offset = i * dim2 * dim3)
+    def apply(i: Int): Tensor2DMut[dim2.type, dim3.type] = Tensor2DMut(floats, dim2, dim3, offset = i * dim2 * dim3)
     def toFloatArray: Array[Float] = floats
     def toFloatBuffer: FloatBuffer = ???
   }

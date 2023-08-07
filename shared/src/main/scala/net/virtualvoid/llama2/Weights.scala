@@ -4,27 +4,27 @@ import java.io.{ File, RandomAccessFile }
 import java.nio.{ ByteOrder, FloatBuffer }
 import java.nio.channels.FileChannel
 
-trait Weights[nLayers <: Int, dim <: Int, hiddenDim <: Int] {
-  def tokenEmbeddingTable: Tensor2D
-  def rms_att_weight: Tensor2D
+trait Weights[dim <: Int, hiddenDim <: Int, nLayers <: Int, nHeads <: Int, vocabSize <: Int, seqLen <: Int, halfHeadSize <: Int] {
+  def tokenEmbeddingTable: Tensor2D[vocabSize, dim]
+  def rms_att_weight: Tensor2D[nLayers, dim]
   def wq: Tensor3D[nLayers, dim, dim]
   def wk: Tensor3D[nLayers, dim, dim]
   def wv: Tensor3D[nLayers, dim, dim]
   def wo: Tensor3D[nLayers, dim, dim]
-  def rms_ffn_weight: Tensor2D
+  def rms_ffn_weight: Tensor2D[nLayers, dim]
   def w1: Tensor3D[nLayers, hiddenDim, dim]
   def w2: Tensor3D[nLayers, dim, hiddenDim]
   def w3: Tensor3D[nLayers, hiddenDim, dim]
   def rms_final_weight: Tensor1D
-  def freq_cis_real: Tensor2D
-  def freq_cis_imag: Tensor2D
-  def wcls: Tensor2D
+  def freq_cis_real: Tensor2D[seqLen, halfHeadSize]
+  def freq_cis_imag: Tensor2D[seqLen, halfHeadSize]
+  def wcls: Tensor2D[vocabSize, dim]
 }
 object Weights {
-  def fromFile(config: Config, checkpointFile: File): Weights[config.nLayers.type, config.dim.type, config.hiddenDim.type] =
+  def fromFile(config: Config, checkpointFile: File): Weights[config.dim.type, config.hiddenDim.type, config.nLayers.type, config.nHeads.type, config.vocabSize.type, config.seqLen.type, config.halfHeadSize.type] =
     Weights(config, Buffers.fromFile(checkpointFile, Config.HeaderSize))
 
-  def apply(config: Config, buffers: Buffers): Weights[config.nLayers.type, config.dim.type, config.hiddenDim.type] = new Weights[config.nLayers.type, config.dim.type, config.hiddenDim.type] {
+  def apply(config: Config, buffers: Buffers): Weights[config.dim.type, config.hiddenDim.type, config.nLayers.type, config.nHeads.type, config.vocabSize.type, config.seqLen.type, config.halfHeadSize.type] = new Weights[config.dim.type, config.hiddenDim.type, config.nLayers.type, config.nHeads.type, config.vocabSize.type, config.seqLen.type, config.halfHeadSize.type] {
     import buffers._
 
     val tokenEmbeddingTable = d2(config.vocabSize, config.dim)
@@ -39,8 +39,8 @@ object Weights {
     val w3 = d3(config.nLayers, config.hiddenDim, config.dim)
     val rms_final_weight = d1(config.dim)
     val headSize = config.dim / config.nHeads
-    val freq_cis_real = d2(config.seqLen, headSize / 2)
-    val freq_cis_imag = d2(config.seqLen, headSize / 2)
+    val freq_cis_real = d2(config.seqLen, config.halfHeadSize)
+    val freq_cis_imag = d2(config.seqLen, config.halfHeadSize)
     val wcls = if (config.sharedWeights) tokenEmbeddingTable else d2(config.vocabSize, config.dim)
   }
 }

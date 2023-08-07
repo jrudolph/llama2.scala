@@ -18,7 +18,7 @@ import java.io.File
  */
 class Llama2TensorTransformer(
     val config: Config)(
-    weights:        Weights[config.nLayers.type, config.dim.type, config.hiddenDim.type],
+    weights:        Weights[config.dim.type, config.hiddenDim.type, config.nLayers.type, config.nHeads.type, config.vocabSize.type, config.seqLen.type, config.halfHeadSize.type],
     val x:          Tensor1DMut, // dim
     val xb:         Tensor1DMut, // dim
     val xb2:        Tensor1DMut, // dim
@@ -27,7 +27,7 @@ class Llama2TensorTransformer(
     val q:          Tensor1DMut, // dim
     val k:          Tensor1DMut, // dim
     val v:          Tensor1DMut, // dim
-    val att:        Tensor2DMut, // nHeads, seqLength
+    val att:        Tensor2DMut[config.nHeads.type, config.seqLen.type], // nHeads, seqLength
     val logits:     Tensor1DMut, // vocabSize
     val keyCache:   Tensor3DMut[config.nLayers.type, config.seqLen.type, config.dim.type], // layer, seqLength, dim
     val valueCache: Tensor3DMut[config.nLayers.type, config.seqLen.type, config.dim.type] // layer, seqLength, dim
@@ -260,7 +260,7 @@ class Llama2TensorTransformer(
   }
 }
 object Llama2TensorTransformer {
-  def init(config: Config, weights: Weights[config.nLayers.type, config.dim.type, config.hiddenDim.type]): Llama2TensorTransformer = {
+  def init(config: Config, weights: Weights[config.dim.type, config.hiddenDim.type, config.nLayers.type, config.nHeads.type, config.vocabSize.type, config.seqLen.type, config.halfHeadSize.type]): Llama2TensorTransformer = {
     import config._
     new Llama2TensorTransformer(
       config = config)(
