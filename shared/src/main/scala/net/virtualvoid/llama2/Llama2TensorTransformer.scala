@@ -17,8 +17,8 @@ import java.io.File
  * @param valueCache value cache for multiquery
  */
 class Llama2TensorTransformer(
-    config:         Config,
-    weights:        Weights,
+    val config: Config)(
+    weights:        Weights[config.nLayers.type, config.dim.type, config.hiddenDim.type],
     val x:          Tensor1DMut, // dim
     val xb:         Tensor1DMut, // dim
     val xb2:        Tensor1DMut, // dim
@@ -29,8 +29,8 @@ class Llama2TensorTransformer(
     val v:          Tensor1DMut, // dim
     val att:        Tensor2DMut, // nHeads, seqLength
     val logits:     Tensor1DMut, // vocabSize
-    val keyCache:   Tensor3DMut, // layer, seqLength, dim
-    val valueCache: Tensor3DMut // layer, seqLength, dim
+    val keyCache:   Tensor3DMut[config.nLayers.type, config.seqLen.type, config.dim.type], // layer, seqLength, dim
+    val valueCache: Tensor3DMut[config.nLayers.type, config.seqLen.type, config.dim.type] // layer, seqLength, dim
 ) extends Llama2Transformer {
   import config._
 
@@ -260,10 +260,10 @@ class Llama2TensorTransformer(
   }
 }
 object Llama2TensorTransformer {
-  def init(config: Config, weights: Weights): Llama2TensorTransformer = {
+  def init(config: Config, weights: Weights[config.nLayers.type, config.dim.type, config.hiddenDim.type]): Llama2TensorTransformer = {
     import config._
     new Llama2TensorTransformer(
-      config = config,
+      config = config)(
       weights = weights,
       x = Tensor1DMut.zero(dim),
       xb = Tensor1DMut.zero(dim),

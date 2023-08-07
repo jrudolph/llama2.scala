@@ -18,10 +18,10 @@ object Llama2Main extends App {
 
   val useTensor = false
   val transformer: Llama2Transformer =
-    if (useTensor)
-      Llama2TensorTransformer.init(config, weights)
-    else
-      Llama2SimpleTransformer.init(config, weights)
+    //if (useTensor)
+    Llama2TensorTransformer.init(config, weights)
+  //else
+  //  Llama2SimpleTransformer.init(config, weights)
 
   def run(): Unit = {
     val steps = 256
