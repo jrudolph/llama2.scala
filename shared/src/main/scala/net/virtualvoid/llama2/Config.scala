@@ -22,7 +22,8 @@ case class Config(
     sharedWeights: Boolean,
     eps:           Float   = 1e-5f
 ) {
-  def headSize: Int = dim / nHeads
+  val headSize: Int = dim / nHeads
+  val halfHeadSize: Int = headSize / 2
 }
 object Config {
   val HeaderSize = 7 * 4

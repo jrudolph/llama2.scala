@@ -7,9 +7,9 @@ import java.nio.channels.FileChannel
 import scalanative.posix.sys.mman
 
 trait Buffers {
-  def d1(dim1: Int): Tensor1D
-  def d2(dim1: Int, dim2: Int): Tensor2D
-  def d3(dim1: Int, dim2: Int, dim3: Int): Tensor3D
+  def d1(dim1: Int): Tensor1D[dim1.type]
+  def d2(dim1: Int, dim2: Int): Tensor2D[dim1.type, dim2.type]
+  def d3(dim1: Int, dim2: Int, dim3: Int): Tensor3D[dim1.type, dim2.type, dim3.type]
 }
 
 object Buffers {
@@ -33,8 +33,8 @@ object Buffers {
       res
     }
 
-    def d1(dim1: Int): Tensor1D = Tensor1D(next(dim1), dim1)
-    def d2(dim1: Int, dim2: Int): Tensor2D = Tensor2D(next(dim1 * dim2), dim1, dim2)
-    def d3(dim1: Int, dim2: Int, dim3: Int): Tensor3D = Tensor3D(next(dim1 * dim2 * dim3), dim1, dim2, dim3)
+    def d1(dim1: Int): Tensor1D[dim1.type] = Tensor1D(next(dim1), dim1)
+    def d2(dim1: Int, dim2: Int): Tensor2D[dim1.type, dim2.type] = Tensor2D(next(dim1 * dim2), dim1, dim2)
+    def d3(dim1: Int, dim2: Int, dim3: Int): Tensor3D[dim1.type, dim2.type, dim3.type] = Tensor3D(next(dim1 * dim2 * dim3), dim1, dim2, dim3)
   }
 }

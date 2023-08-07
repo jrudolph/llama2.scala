@@ -47,15 +47,14 @@ class Llama2SimpleTransformer(
   }
 
   def step(token: Int, pos: Int): Array[Float] = {
-    import config._
     import weights._
 
     // copy embedding for token to x
     extractRowFrom2D(x, tokenEmbeddingTable, dim, token)
 
     // select freq rows for pos
-    val freq_cis_real_row = freq_cis_real.duplicate().position(pos * headSize / 2).slice()
-    val freq_cis_imag_row = freq_cis_imag.duplicate().position(pos * headSize / 2).slice()
+    val freq_cis_real_row = freq_cis_real.duplicate().position(pos * halfHeadSize).slice()
+    val freq_cis_imag_row = freq_cis_imag.duplicate().position(pos * halfHeadSize).slice()
 
     // for all layers
     var l = 0
@@ -248,7 +247,7 @@ class Llama2SimpleTransformer(
   def extractRow(dest: Array[Float], src: Array[Float], loff: Int, pos: Int, dim: Int): Unit =
     System.arraycopy(src, 0, dest, loff + pos * dim, dim)
 
-  def select3d(buffer: Tensor3D, dim1: Int, dim2: Int, i: Int): FloatBuffer = buffer(i)
+  def select3d(buffer: Tensor3D[_, _, _], dim1: Int, dim2: Int, i: Int): FloatBuffer = buffer(i)
 
   def select2d(buffer: FloatBuffer, dim1: Int, i: Int): FloatBuffer =
     buffer.duplicate().position(i * dim1).slice()
@@ -352,7 +351,7 @@ class Llama2SimpleTransformer(
 
 object Llama2SimpleTransformer {
   def init(config: Config, weights: Weights): Llama2Transformer = {
-    import config._
+    import weights._
     new Llama2SimpleTransformer(
       config = config,
       weights = weights,
