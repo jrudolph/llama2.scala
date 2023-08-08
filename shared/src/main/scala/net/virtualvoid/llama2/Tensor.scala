@@ -197,18 +197,7 @@ object Tensor2D {
     def `@`(v: Tensor1DMut): Op1D = new Op1D {
       override def into(dest: Tensor1DMut): Unit = {
         require(v.size == dim2)
-        val vs = v.toFloatArray
-        var i = 0
-        while (i < dim1) {
-          var j = 0
-          var sum = 0.0f
-          while (j < dim2) {
-            sum += floatBuffer.get(i * dim2 + j) * vs(j)
-            j += 1
-          }
-          dest(i) = sum
-          i += 1
-        }
+        MathPrimitives.matMul(floatBuffer, v.toFloatArray, dest.toFloatArray)
       }
     }
 
@@ -216,45 +205,11 @@ object Tensor2D {
     def toFloatBuffer: FloatBuffer = floatBuffer.duplicate()
 
     def quantizeQ8: Tensor2D = {
-      val K = 32
-      require(size1 % K == 0)
-
-      val numBlocks = size0 * size1 / K
-
-      val quantized = new Array[Byte](size0 * size1)
-      val quantizeFactor = new Array[Float](numBlocks)
-
-      var i = 0
-      while (i < numBlocks) {
-        //println(s"Block ${i}")
-        var j = 0
-        var max = 0f
-        while (j < K) {
-          val v = floatBuffer.get(i * K + j).abs
-          if (v > max) max = v
-          j += 1
-        }
-
-        val d = max / ((1 << 7) - 1)
-        val id = if (d != 0f) 1.0f / d else 0.0f
-
-        quantizeFactor(i) = d
-
-        j = 0
-        while (j < K) {
-          val v = floatBuffer.get(i * K + j)
-          val x0 = v * id // scale
-          quantized(i * K + j) = math.round(x0).toByte
-          //println(f"At ${i * K + j} v: $v%.6f x0: ${x0} quantized: ${quantized(i * K + j)}")
-          j += 1
-        }
-
-        i += 1
-      }
+      val K = MathPrimitives.Q8_K
+      val (quantized, quantizeFactor) = MathPrimitives.quantizeQ8(floatBuffer, size0, size1)
 
       new Tensor2D {
         def size0: Int = dim1
-
         def size1: Int = dim2
 
         def apply(i: Int): Tensor1D = ???
@@ -268,61 +223,15 @@ object Tensor2D {
           val numBlocksV = arr.size / K
           val quantizeVFactor = new Array[Float](numBlocksV)
 
-          {
-            var i = 0
-            while (i < numBlocksV) {
-              var j = 0
-              var max = 0f
-              while (j < K) {
-                val v = arr(i * K + j).abs
-                if (v > max) max = v
-                j += 1
-              }
-
-              val d = max / ((1 << 7) - 1)
-              val id = if (d != 0f) 1.0f / d else 0.0f
-
-              quantizeVFactor(i) = d
-              j = 0
-              while (j < K) {
-                val x0 = arr(i * K + j) * id // scale
-                quantizedV(i * K + j) = math.round(x0).toByte
-                j += 1
-              }
-
-              i += 1
-            }
-          }
-
-          var i = 0
-          while (i < dim1) {
-            var j = 0
-            var sum = 0.0f
-            var sum2 = 0f
-            require(numBlocksV * 32 == dim2)
-            while (j < numBlocksV) {
-              var sumq = 0
-              var k = 0
-              while (k < K) {
-                sumq += quantized(i * dim2 + j * K + k) * quantizedV(j * K + k)
-                k += 1
-              }
-              sum += sumq.toFloat * quantizeFactor(i * dim2 / K + j) * quantizeVFactor(j)
-
-              j += 1
-            }
-
-            dest(i) = sum
-            i += 1
-          }
+          MathPrimitives.quantizeQ8(arr, quantizedV, quantizeVFactor)
+          MathPrimitives.matMulQ8(quantized, quantizeFactor, quantizedV, quantizeVFactor, dim1, dim2, dest.toFloatArray)
         }
 
         def toFloatArray: Array[Float] = ???
-
         def toFloatBuffer: FloatBuffer = ???
 
         def quantizeQ8: Tensor2D = this
-        def quantizeQ4: Tensor2D = ???
+        def quantizeQ4: Tensor2D = outer.quantizeQ4
       }
     }
 
@@ -581,10 +490,9 @@ object Tensor2D {
         }
 
         def toFloatArray: Array[Float] = ???
-
         def toFloatBuffer: FloatBuffer = ???
 
-        def quantizeQ8: Tensor2D = this
+        def quantizeQ8: Tensor2D = outer.quantizeQ8
         def quantizeQ4: Tensor2D = this
       }
     }
