@@ -174,7 +174,6 @@ object MathPrimitives {
 
     var i = 0
     while (i < numBlocks) {
-      //println(s"Block ${i}")
       var j = 0
       var max = 0f
       while (j < K) {
@@ -193,7 +192,6 @@ object MathPrimitives {
         val v = floatBuffer.get(i * K + j)
         val x0 = v * id // scale
         quantized(i * K + j) = math.round(x0).toByte
-        //println(f"At ${i * K + j} v: $v%.6f x0: ${x0} quantized: ${quantized(i * K + j)}")
         j += 1
       }
 

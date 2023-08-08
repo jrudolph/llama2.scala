@@ -64,10 +64,6 @@ class Llama2TensorTransformer(
     while (l < nLayers) {
       println(s"start layer $l")
 
-      val ar = new Array[Float](rms_att_weight(l).size)
-      rms_att_weight(l).copyToArray(ar)
-      trace1d("attention weights", ar)
-
       // attention rmsnorm
       xb := rmsnorm(x, rms_att_weight(l))
 
