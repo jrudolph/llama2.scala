@@ -319,7 +319,9 @@ void matmulQ4_buffer(const int8_t *restrict buffer, const int8_t *restrict qv, c
 {
     int K = 32;
     int numBlocksV = dim2 / K;
-    for (int i = 0; i < dim1; i++) {
+    int i;
+    #pragma omp parallel for private(i) num_threads(6)
+    for (i = 0; i < dim1; i++) {
         //int8_t * a = qa + i * dim2 / 2;
         //float *af = qaf + i * dim2 / K;
         int blockOff = i * dim2 / K;
@@ -418,7 +420,7 @@ void matmulQ4_avx2_buffer(const void *buffer, const int8_t *restrict qv, const f
     int K = 32;
     int numBlocksV = dim2 / K;
     int i;
-    //#pragma omp parallel for private(i) num_threads(4)
+    #pragma omp parallel for private(i) num_threads(6)
     for (i = 0; i < dim1; i++) {
         //int8_t *a = qa + i * dim2 / 2;
         //float *af = qaf + i * dim2 / K;

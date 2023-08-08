@@ -113,7 +113,7 @@ object GgmlLoader {
       val dataOffset = f.getFilePointer
 
       val dataBuffer = f.getChannel.map(MapMode.READ_ONLY, dataOffset, size)
-      val data = tpe match {
+      tpe match {
         case 0 =>
           val data = nDims match {
             case 1 =>
@@ -130,6 +130,8 @@ object GgmlLoader {
 
           weightsBuffer += name -> data
         case 2 /* Q4_0 */ =>
+          val isTrace = name == "layers.31.feed_forward.w1.weight"
+
           require(nDims == 2)
           val buffer = dataBuffer.duplicate()
           val shortBuffer = dataBuffer.duplicate().order(ByteOrder.LITTLE_ENDIAN).asShortBuffer()
@@ -199,14 +201,17 @@ object GgmlLoader {
                 res
               }
 
+              val quantizedV = new Array[Byte](dim2)
+              val numBlocksV = dim2 / K
+              val quantizeVFactor = new Array[Float](numBlocksV)
+
               def `@`(v: Tensor1DMut): Op1D = { dest =>
                 val arr = v.toFloatArray
                 require(arr.length % K == 0)
 
                 // quantize v as well (it will be used `dim1` times so it is worth it)
-                val quantizedV = new Array[Byte](arr.size)
-                val numBlocksV = arr.size / K
-                val quantizeVFactor = new Array[Float](numBlocksV)
+
+                //val start = System.nanoTime()
 
                 {
                   var i = 0
@@ -234,8 +239,14 @@ object GgmlLoader {
                   }
                 }
 
+                //val afterQ8 = System.nanoTime()
+
                 //println(f"quantized(0,0): ${quantized(0, 0)}%3d quantizeFactor(0): ${quantizeFactor(0)}%12.9f")
                 VectMult.matMulQ4_buffer(buffer, quantizedV, quantizeVFactor, dest)
+
+                //val end = System.nanoTime()
+
+                //if (isTrace) println(f"totalTime: ${(end - start) / 1e6}%5.2f ms size: ${dim1 * dim2}%10d quantTime: ${(afterQ8 - start) / 1e6}%5.2f ms matmulTime: ${(end - afterQ8) / 1e6}%5.2f ms")
 
                 /*var i = 0
                 while (i < dim1) {
@@ -328,7 +339,7 @@ object GgmlLoader {
     def d1(name: String): Tensor1D = allWeights(name).asInstanceOf[Tensor1D]
     def d2(name: String): Tensor2D = allWeights(name).asInstanceOf[Tensor2D]
     def byLayerD1(name: String): Tensor2D = new Tensor2D {
-      val layers = (0 until config.nLayers).map { i => d1(s"layers.$i.$name") }
+      val layers = (0 until config.nLayers).map { i => d1(s"layers.$i.$name") }.toArray
       val dim = layers.head.size
 
       def size0: Int = config.nLayers
@@ -341,15 +352,15 @@ object GgmlLoader {
       def quantizeQ4: Tensor2D = ???
     }
     def byLayerD2(name: String): Tensor3D = new Tensor3D {
-      val layers = (0 until config.nLayers).map { i => d2(s"layers.$i.$name") }
+      val layers = (0 until config.nLayers).map { i => d2(s"layers.$i.$name") }.toArray
       val dim0 = layers.head.size0
       val dim1 = layers.head.size1
 
-      override def size0: Int = config.nLayers
-      override def size1: Int = dim0
-      override def size2: Int = dim1
+      def size0: Int = config.nLayers
+      def size1: Int = dim0
+      def size2: Int = dim1
 
-      override def apply(i: Int): Tensor2D = layers(i)
+      def apply(i: Int): Tensor2D = layers(i)
 
       def toFloatArray: Array[Float] = ???
       def toFloatBuffer: FloatBuffer = ???

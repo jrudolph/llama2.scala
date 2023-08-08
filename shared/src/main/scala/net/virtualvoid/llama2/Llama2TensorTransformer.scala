@@ -46,14 +46,207 @@ class Llama2TensorTransformer(
     //arr.take(100).zipWithIndex.foreach { case (x, i) => println(f"$name%s $i%5d $x%12.9f") }
   }
 
-  def step(token: Int, pos: Int): Array[Float] = {
-    import config._
-    import weights._
-    println(s"Step $pos token $token")
+  import config._
+  import weights._
 
+  def embedToken(token: Int): Unit = {
     // copy embedding for token to x
     x := tokenEmbeddingTable(token)
     trace1d("embedding", x)
+  }
+
+  def attention(pos: Int, l: Int, freq_cis_real_row: Tensor1D, freq_cis_imag_row: Tensor1D): Unit = {
+    val ar = new Array[Float](rms_att_weight(l).size)
+    rms_att_weight(l).copyToArray(ar)
+    trace1d("attention weights", ar)
+
+    // attention rmsnorm
+    xb := rmsnorm(x, rms_att_weight(l))
+
+    trace1d("attention rmsnorm", xb)
+
+    def qkv(): Unit = {
+      // qkv calculations
+      q := wq(l) `@` xb
+      k := wk(l) `@` xb
+      v := wv(l) `@` xb
+    }
+    def rope(): Unit = {
+      // apply RoPE rotation
+      var h = 0
+      while (h < nHeads) {
+        // rotation
+        {
+          var i = 0
+          while (i < headSize) {
+            val q0 = q(h * headSize + i)
+            val q1 = q(h * headSize + i + 1)
+            val k0 = k(h * headSize + i)
+            val k1 = k(h * headSize + i + 1)
+
+            val fcr = freq_cis_real_row.get(i / 2)
+            val fci = freq_cis_imag_row.get(i / 2)
+
+            q(h * headSize + i) = q0 * fcr - q1 * fci
+            q(h * headSize + i + 1) = q0 * fci + q1 * fcr
+            k(h * headSize + i) = k0 * fcr - k1 * fci
+            k(h * headSize + i + 1) = k0 * fci + k1 * fcr
+
+            i += 2 // !
+          }
+        }
+
+        h += 1
+      }
+    }
+
+    def multiHeadAttention(loff: Int): Unit = {
+      // multihead attention
+      var h = 0
+      import scala.collection.parallel.CollectionConverters._
+      //(0 until nHeads).par.foreach { h =>
+      while (h < nHeads) {
+        val qOff = h * headSize
+        val attOffset = h * seqLen
+
+        // att(h)(t) = q(h) * keyCache(l)
+
+        {
+          var t = 0
+          while (t <= /* ! */ pos) {
+            val kCacheOff = loff + t * dim + h * headSize
+
+            var score = 0f // q(h)
+            var i = 0
+            while (i < headSize) {
+              score += q.toFloatArray(qOff + i) * keyCache.toFloatArray(kCacheOff + i)
+              i += 1
+            }
+            score /= math.sqrt(headSize).toFloat
+
+            // safe to attention buffer
+            att(attOffset + t) = score
+            //println(f"att(${attOffset + t}%d) score $h%d $t%d $score%f")
+
+            t += 1
+          }
+        }
+
+        softmax(att(h).shorten(pos + 1))
+        trace1d("softmax att", att.toFloatArray.take(pos + 1))
+
+        // weighted sum of the values, store into xb
+        {
+          val xbOff = h * headSize
+
+          // reset xb row
+          {
+            var i = 0
+            while (i < headSize) {
+              xb(xbOff + i) = 0f
+              i += 1
+            }
+          }
+          // sum
+          var t = 0
+          while (t <= /* ! */ pos) {
+            // get the value vector for this head and at this timestep
+            val vOff = loff + t * dim + h * headSize
+            // get the attention weight for this timestep
+            val a = att.toFloatArray(attOffset + t) // accumulate the weighted value into xb
+            //println(f"a $h%d $t%d $a%f")
+
+            //
+            {
+              var i = 0
+              while (i < headSize) {
+                xb(xbOff + i) += valueCache.toFloatArray(vOff + i) * a
+                //println(f"v $h%d $t%d $i%d ${valueCache(vOff + i)}%f $a%f ${xb(xbOff + i)}%f")
+                i += 1
+              }
+            }
+
+            t += 1
+          }
+        }
+
+        h += 1
+      }
+    }
+
+    qkv()
+
+    trace1d("q", q)
+    trace1d("k", k)
+    trace1d("v", v)
+
+    rope()
+
+    trace1d("q_rope", q)
+    trace1d("k_rope", k)
+    trace1d("v_rope", v)
+
+    // cache kv at this pos
+    val loff = l * seqLen * dim
+    keyCache(l)(pos) := k
+    valueCache(l)(pos) := v
+
+    multiHeadAttention(loff)
+
+    trace1d("attention", xb)
+
+    // final matmul to get the output of the attention
+    xb2 := wo(l) `@` xb
+
+    // residual connection
+    x += xb2
+  }
+  def ffn(l: Int): Unit = {
+    trace1d("before ffn", x)
+
+    // ffn rmsnorm
+    xb := rmsnorm(x, rms_ffn_weight(l))
+
+    hb := w1(l) `@` xb
+    hb2 := w3(l) `@` xb
+
+    // silu
+    // hb := hb / (1f + exp(-hb))
+
+    {
+      var i = 0
+      while (i < hiddenDim) {
+        val x = hb(i)
+        hb(i) = x / (1f + math.exp(-x)).toFloat
+        i += 1
+      }
+    }
+
+    // elementwise multiply
+    hb ∘= hb2
+
+    // final matmul to get output of ffn
+    xb := w2(l) `@` hb
+
+    // residual connection
+    x += xb
+
+    trace1d(s"layer done", x)
+  }
+
+  def calcLogits(): Unit = {
+    // final rmsnorm
+    x := rmsnorm(x, rms_final_weight)
+
+    // classifier into logits
+    logits := wcls `@` x
+  }
+
+  def step(token: Int, pos: Int): Array[Float] = {
+
+    println(s"Step $pos token $token")
+
+    embedToken(token)
 
     // select freq rows for pos
     val freq_cis_real_row = freq_cis_real(pos)
@@ -64,181 +257,13 @@ class Llama2TensorTransformer(
     while (l < nLayers) {
       println(s"start layer $l")
 
-      val ar = new Array[Float](rms_att_weight(l).size)
-      rms_att_weight(l).copyToArray(ar)
-      trace1d("attention weights", ar)
-
-      // attention rmsnorm
-      xb := rmsnorm(x, rms_att_weight(l))
-
-      trace1d("attention rmsnorm", xb)
-
-      // qkv calculations
-      q := wq(l) `@` xb
-      k := wk(l) `@` xb
-      v := wv(l) `@` xb
-
-      trace1d("q", q)
-      trace1d("k", k)
-      trace1d("v", v)
-
-      // apply RoPE rotation
-      {
-        var h = 0
-        while (h < nHeads) {
-          // rotation
-          {
-            var i = 0
-            while (i < headSize) {
-              val q0 = q(h * headSize + i)
-              val q1 = q(h * headSize + i + 1)
-              val k0 = k(h * headSize + i)
-              val k1 = k(h * headSize + i + 1)
-
-              val fcr = freq_cis_real_row.get(i / 2)
-              val fci = freq_cis_imag_row.get(i / 2)
-
-              q(h * headSize + i) = q0 * fcr - q1 * fci
-              q(h * headSize + i + 1) = q0 * fci + q1 * fcr
-              k(h * headSize + i) = k0 * fcr - k1 * fci
-              k(h * headSize + i + 1) = k0 * fci + k1 * fcr
-
-              i += 2 // !
-            }
-          }
-
-          h += 1
-        }
-      }
-
-      trace1d("q_rope", q)
-      trace1d("k_rope", k)
-      trace1d("v_rope", v)
-
-      // cache kv at this pos
-      val loff = l * seqLen * dim
-      keyCache(l)(pos) := k
-      valueCache(l)(pos) := v
-
-      // multihead attention
-      {
-        var h = 0
-        while (h < nHeads) {
-          val qOff = h * headSize
-          val attOffset = h * seqLen
-
-          // att(h)(t) = q(h) * keyCache(l)
-
-          {
-            var t = 0
-            while (t <= /* ! */ pos) {
-              val kCacheOff = loff + t * dim + h * headSize
-
-              var score = 0f // q(h)
-              var i = 0
-              while (i < headSize) {
-                score += q.toFloatArray(qOff + i) * keyCache.toFloatArray(kCacheOff + i)
-                i += 1
-              }
-              score /= math.sqrt(headSize).toFloat
-
-              // safe to attention buffer
-              att(attOffset + t) = score
-              //println(f"att(${attOffset + t}%d) score $h%d $t%d $score%f")
-
-              t += 1
-            }
-          }
-
-          softmax(att(h).shorten(pos + 1))
-          trace1d("softmax att", att.toFloatArray.take(pos + 1))
-
-          // weighted sum of the values, store into xb
-          {
-            val xbOff = h * headSize
-
-            // reset xb row
-            {
-              var i = 0
-              while (i < headSize) {
-                xb(xbOff + i) = 0f
-                i += 1
-              }
-            }
-            // sum
-            var t = 0
-            while (t <= /* ! */ pos) {
-              // get the value vector for this head and at this timestep
-              val vOff = loff + t * dim + h * headSize
-              // get the attention weight for this timestep
-              val a = att.toFloatArray(attOffset + t) // accumulate the weighted value into xb
-              //println(f"a $h%d $t%d $a%f")
-
-              //
-              {
-                var i = 0
-                while (i < headSize) {
-                  xb(xbOff + i) += valueCache.toFloatArray(vOff + i) * a
-                  //println(f"v $h%d $t%d $i%d ${valueCache(vOff + i)}%f $a%f ${xb(xbOff + i)}%f")
-                  i += 1
-                }
-              }
-
-              t += 1
-            }
-          }
-
-          h += 1
-        }
-      }
-      trace1d("attention", xb)
-
-      // final matmul to get the output of the attention
-      xb2 := wo(l) `@` xb
-
-      // residual connection
-      x += xb2
-
-      trace1d("before ffn", x)
-
-      // ffn rmsnorm
-      xb := rmsnorm(x, rms_ffn_weight(l))
-
-      // ffn
-      hb := w1(l) `@` xb
-      hb2 := w3(l) `@` xb
-
-      // silu
-      // hb := hb / (1f + exp(-hb))
-
-      {
-        var i = 0
-        while (i < hiddenDim) {
-          val x = hb(i)
-          hb(i) = x / (1f + math.exp(-x)).toFloat
-          i += 1
-        }
-      }
-
-      // elementwise multiply
-      hb ∘= hb2
-
-      // final matmul to get output of ffn
-      xb := w2(l) `@` hb
-
-      // residual connection
-      x += xb
-
-      trace1d(s"layer done", x)
+      attention(pos, l, freq_cis_real_row, freq_cis_imag_row)
+      ffn(l)
 
       l += 1
     }
 
-    // final rmsnorm
-    x := rmsnorm(x, rms_final_weight)
-
-    // classifier into logits
-    logits := wcls `@` x
+    calcLogits()
 
     logits
   }
