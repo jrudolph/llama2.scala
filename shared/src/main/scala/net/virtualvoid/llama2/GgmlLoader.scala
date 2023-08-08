@@ -85,15 +85,15 @@ object GgmlLoader {
       tpe match {
         case 0 =>
           val data = nDims match {
-            case 1 => Tensor1D(dataBuffer.duplicate().order(ByteOrder.LITTLE_ENDIAN).asFloatBuffer(), dims(0))
+            case 1 => Tensor1D(FloatBuffer.fromNioBuffer(dataBuffer.order(ByteOrder.LITTLE_ENDIAN).asFloatBuffer()), dims(0))
             case n => throw new IllegalArgumentException(s"Unsupported number of dimensions for FP32 parameters '$name': $n")
           }
 
           weightsBuffer += name -> data
         case 2 /* Q4_0 */ =>
           require(nDims == 2, s"Unsupported number of dimensions for Q4_0 parameters '$name': $nDims")
-          val buffer = dataBuffer.duplicate()
-          val shortBuffer = buffer.duplicate().order(ByteOrder.LITTLE_ENDIAN).asShortBuffer()
+          val buffer = dataBuffer
+          val shortBuffer = buffer.order(ByteOrder.LITTLE_ENDIAN).asShortBuffer()
           val dim1 = dims(1)
           val dim2 = dims(0)
 

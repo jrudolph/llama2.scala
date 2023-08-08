@@ -28,7 +28,7 @@ object Buffers {
       }
 
     def next(size: Long): FloatBuffer = {
-      val res = FloatBuffer(buf.asInstanceOf[Ptr[Float]], pos)
+      val res = FloatBuffer(buf.asInstanceOf[Ptr[Float]], pos, size.toInt)
       pos += size
       res
     }
