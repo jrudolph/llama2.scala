@@ -205,7 +205,7 @@ object Tensor2D {
     def toFloatBuffer: FloatBuffer = floatBuffer.duplicate()
 
     def quantizeQ8: Tensor2D = {
-      val K = MathPrimitives.Q8_K
+      val K = MathPrimitives.QK8_0
       val (quantized, quantizeFactor) = MathPrimitives.quantizeQ8(floatBuffer, size0, size1)
 
       new Tensor2D {
@@ -237,7 +237,7 @@ object Tensor2D {
     }
 
     def quantizeQ4: Tensor2D = {
-      val K = MathPrimitives.Q4_K
+      val K = MathPrimitives.QK4_0
       require(size1 % K == 0)
       val (quantized, quantizeFactor) = MathPrimitives.quantizeQ4(floatBuffer, size0, size1)
 
@@ -289,8 +289,8 @@ object Tensor2D {
           val numBlocksV = arr.size / K
           val quantizeVFactor = new Array[Float](numBlocksV)
 
-          MathPrimitives.quantizeQ4(arr, quantizedV, quantizeVFactor)
-          MathPrimitives.matMulQ4(quantized, quantizeFactor, quantizedV, quantizeVFactor, dim1, dim2, dest.toFloatArray)
+          MathPrimitives.quantizeQ8(arr, quantizedV, quantizeVFactor)
+          MathPrimitives.matMulQ4Q8(quantized, quantizeFactor, quantizedV, quantizeVFactor, dim1, dim2, dest.toFloatArray)
         }
 
         def toFloatArray: Array[Float] = ???

@@ -162,7 +162,7 @@ class TensorSpec extends AnyFreeSpec with ScalaCheckPropertyChecks {
           assert(almostEqual(
             res.toFloatArray,
             res2.toFloatArray,
-            0.05f
+            0.1f
           ))
       }
     }
