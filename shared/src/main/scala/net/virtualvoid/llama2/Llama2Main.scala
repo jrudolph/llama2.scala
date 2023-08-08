@@ -1,6 +1,7 @@
 package net.virtualvoid.llama2
 
 import java.io.File
+import scala.util.Random
 
 object Llama2Main extends App {
   val baseDir = { // reStart runs with a subdirectory as the working directory
@@ -29,7 +30,10 @@ object Llama2Main extends App {
       Llama2SimpleTransformer.init(config, weights)
 
   def run(): Unit = {
-    val steps = 50
+    val temp = .5f
+    val seed = new Random().nextLong()
+    val random = new Random(seed)
+    val steps = 256
 
     var pos = 0
     var token = 1
@@ -37,7 +41,37 @@ object Llama2Main extends App {
     val start = System.nanoTime()
     while (pos < steps) {
       val logits = transformer.step(token, pos)
-      next = logits.zipWithIndex.maxBy(_._1)._2 // argmax
+
+      def softmax(x: Tensor1DMut): Unit = {
+        // find max value
+        val max = x.max
+
+        // exp and sum
+        x -= max
+        x.expMut()
+        // normalize
+        x /= x.sum
+      }
+      def sample(tensor1DMut: Tensor1DMut): Int = {
+        val p = random.nextFloat()
+        tensor1DMut.toFloatArray
+          .iterator
+          .zipWithIndex
+          .scanLeft((0f, 0)) { case (sum, i) => (sum._1 + i._1, i._2) }
+          .dropWhile(_._1 < p)
+          .next()._2
+      }
+
+      next =
+        if (temp == 0f)
+          logits.zipWithIndex.maxBy(_._1)._2 // argmax
+        else {
+          val ls = Tensor1DMut(logits, logits.size)
+          ls /= temp
+          softmax(ls)
+          sample(ls)
+        }
+
       val tok = vocab.tokenScores(next)._1
       val tokenStr = if (token == 1 && tok == " ") tok.drop(1) else tok
       print(tokenStr)
