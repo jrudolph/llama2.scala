@@ -218,6 +218,7 @@ object Tensor2D {
           val arr = v.toFloatArray
           require(arr.length % K == 0)
 
+          // FIXME: provide buffers from outside to avoid allocations per multiplication
           // quantize v as well (it will be used `dim1` times so it is worth it)
           val quantizedV = new Array[Byte](arr.size)
           val numBlocksV = arr.size / K
@@ -236,68 +237,9 @@ object Tensor2D {
     }
 
     def quantizeQ4: Tensor2D = {
-      val K = 32
+      val K = MathPrimitives.Q4_K
       require(size1 % K == 0)
-
-      val numBlocks = size0 * size1 / K
-
-      val quantized = new Array[Byte](size0 * size1 / 2)
-      val quantizeFactor = new Array[Float](numBlocks)
-
-      var i = 0
-      while (i < numBlocks) {
-        //println(s"Block ${i}")
-        var j = 0
-        var amax = 0f
-        var max = 0f
-        while (j < K) {
-          val v = floatBuffer.get(i * K + j).abs
-          if (v > amax) {
-            amax = v
-            max = v
-          }
-          j += 1
-        }
-
-        val d = max / -8f
-        val id = if (d != 0f) 1.0f / d else 0.0f
-
-        quantizeFactor(i) = d
-
-        //println(f"Block $i max: $max%.6f d: $d%.6f id: $id%.6f")
-
-        j = 0
-        while (j < K / 2) {
-          /*const float x0 = x[i * qk + 0 + j] * id;
-          const float x1 = x[i * qk + qk / 2 + j] * id;
-
-          const uint8_t xi0 = MIN(15, (int8_t)(x0 + 8.5f));
-          const uint8_t xi1 = MIN(15, (int8_t)(x1 + 8.5f));
-
-          y[i].qs[j] = xi0;
-          y[i].qs[j] |= xi1 << 4;*/
-
-          //val v =
-          val v0 = floatBuffer.get(i * K + j)
-          val v1 = floatBuffer.get(i * K + K / 2 + j)
-
-          val x0 = floatBuffer.get(i * K + j) * id // scale
-          val x1 = floatBuffer.get(i * K + K / 2 + j) * id // scale
-
-          val xi0 = (x0 + 8.5f).toByte.min(15)
-          val xi1 = (x1 + 8.5f).toByte.min(15)
-
-          /*if (i * K + j >= quantized.size)
-            println(s"$i $K $j $dim1 $dim2 $numBlocks ${quantized.size}")*/
-          quantized(i * K / 2 + j) = ((xi0 << 0) | (xi1 << 4)).toByte
-          //quantized(i * K + j) =
-          //println(f"At ${i * K + j}%2d i: $i j: $j%2d v0: $v0%9.6f x0: ${x0}%9.6f  xi0: ${xi0}%3d v1: $v1%9.6f x1: ${x1}%9.6f  xi1: ${xi1}%3d  quantized: ${(quantized(i * K + j) & 0xff).toHexString}")
-          //println(f"At ${i * K + j} x0: ${x0} x1: ${x1} quantized: ${quantized(i * K + j) >> 4 & 0x0f}")
-          j += 1
-        }
-
-        i += 1
-      }
+      val (quantized, quantizeFactor) = MathPrimitives.quantizeQ4(floatBuffer, size0, size1)
 
       new Tensor2D {
         def size0: Int = dim1
@@ -307,7 +249,6 @@ object Tensor2D {
           def size: Int = dim2
 
           def copyToArray(dest: Array[Float], offset: Int): Unit = {
-            //println(s"dest.length: ${dest.length} offset: $offset size: $size")
             require(dest.length >= offset + size)
             val numBlocksV = size / K
             val blockOffset = i * size / K
@@ -319,7 +260,6 @@ object Tensor2D {
 
               var k = 0
               while (k < K / 2) {
-                //val idx = i * size / 2 + j * K / 2 + k
                 val e = quantized(i * dim2 / 2 + j * K / 2 + k)
 
                 val x0 = (e & 0x0f) - 8
@@ -328,18 +268,14 @@ object Tensor2D {
                 dest(offset + j * K + k) = x0 * factor
                 dest(offset + j * K + k + K / 2) = x1 * factor
 
-                //println(f"idx: $idx%5d e: $e%3d x0: $x0%3d x1: $x1%3d factor: $factor%1.5f ${dest(offset + j * K + k)}")
-
                 k += 1
               }
 
-              //???
               j += 1
             }
           }
 
           def toFloatBuffer: FloatBuffer = ???
-
           def ∘(other: Tensor1DMut): Op1D = ???
         }
 
@@ -347,146 +283,14 @@ object Tensor2D {
           val arr = v.toFloatArray
           require(arr.length % K == 0)
 
+          // FIXME: provide buffers from outside to avoid allocations per multiplication
           // quantize v as well (it will be used `dim1` times so it is worth it)
           val quantizedV = new Array[Byte](arr.size)
           val numBlocksV = arr.size / K
           val quantizeVFactor = new Array[Float](numBlocksV)
 
-          /*{
-            var i = 0
-            while (i < numBlocksV) {
-              //println(s"Block ${i}")
-              var j = 0
-              var amax = 0f
-              var max = 0f
-              while (j < K) {
-                val v = arr(i * K + j).abs
-                if (v > amax) {
-                  amax = v
-                  max = v
-                }
-                j += 1
-              }
-
-              val d = max / -8f
-              val id = if (d != 0f) 1.0f / d else 0.0f
-
-              quantizeVFactor(i) = d
-
-              //println(f"Block $i max: $max%.6f d: $d%.6f id: $id%.6f")
-
-              j = 0
-              while (j < K / 2) {
-                /*const float x0 = x[i * qk + 0 + j] * id;
-                const float x1 = x[i * qk + qk / 2 + j] * id;
-
-                const uint8_t xi0 = MIN(15, (int8_t)(x0 + 8.5f));
-                const uint8_t xi1 = MIN(15, (int8_t)(x1 + 8.5f));
-
-                y[i].qs[j] = xi0;
-                y[i].qs[j] |= xi1 << 4;*/
-
-                //val v =
-                val v0 = arr(i * K + j)
-                val v1 = arr(i * K + K / 2 + j)
-
-                val x0 = arr(i * K + j) * id // scale
-                val x1 = arr(i * K + K / 2 + j) * id // scale
-
-                val xi0 = (x0 + 8.5f).toByte.min(15)
-                val xi1 = (x1 + 8.5f).toByte.min(15)
-
-                quantizedV(i * K / 2 + j) = ((xi0 << 0) | (xi1 << 4)).toByte
-                //quantized(i * K + j) =
-                //println(f"At ${i * K + j}%2d i: $i j: $j%2d v0: $v0%9.6f x0: ${x0}%9.6f  xi0: ${xi0}%3d v1: $v1%9.6f x1: ${x1}%9.6f  xi1: ${xi1}%3d  quantized: ${(quantized(i * K + j) & 0xff).toHexString}")
-                //println(f"At ${i * K + j} x0: ${x0} x1: ${x1} quantized: ${quantized(i * K + j) >> 4 & 0x0f}")
-                j += 1
-              }
-
-              i += 1
-            }
-          }*/
-
-          {
-            var i = 0
-            while (i < numBlocksV) {
-              var j = 0
-              var max = 0f
-              while (j < K) {
-                val v = arr(i * K + j).abs
-                if (v > max) max = v
-                j += 1
-              }
-
-              val d = max / ((1 << 7) - 1)
-              val id = if (d != 0f) 1.0f / d else 0.0f
-
-              quantizeVFactor(i) = d
-              j = 0
-              while (j < K) {
-                val x0 = arr(i * K + j) * id // scale
-                quantizedV(i * K + j) = math.round(x0).toByte
-                j += 1
-              }
-
-              i += 1
-            }
-          }
-
-          var i = 0
-          while (i < dim1) {
-            var j = 0
-            var sum = 0.0f
-            var sum2 = 0f
-            require(numBlocksV * 32 == dim2)
-            while (j < numBlocksV) {
-              val xF = quantizeFactor(i * dim2 / K + j)
-              val vF = quantizeVFactor(j)
-
-              var sumq = 0
-              var sumb = 0f
-              var k = 0
-              while (k < K / 2) {
-                /*const int v0 = (x[i].qs[j] & 0x0F) - 8;
-                const int v1 = (x[i].qs[j] >> 4) - 8;
-
-                sumi += (v0 * y[i].qs[j]) + (v1 * y[i].qs[j + qk / 2]);*/
-                val idx = i * dim2 / 2 + j * K / 2 + k
-                val e = quantized(idx)
-                val x0 = (e & 0x0f) - 8
-                val x1 = ((e & 0xf0) >> 4) - 8
-
-                val v0 = quantizedV(j * K + k)
-                val v1 = quantizedV(j * K + k + K / 2)
-
-                if (i <= -1) {
-                  val bufIdx = i * dim2 + j * K + k
-                  println(f"idx: $idx%3d i: $i%3d j: $j%3d k: $k%3d bufIdx: $bufIdx%3d x0: $x0%3d x00: ${x0 * xF}%9.6f o0: ${floatBuffer.get(bufIdx)}%9.6f v0: $v0%3d v00: ${v0 * vF}%9.6f vo0: ${arr(j * K + k)}%9.6f")
-                  println(f"ref: ${floatBuffer.get(i * dim2 + j * K + k) * arr(j * K + k)}%9.6f here: ${x0 * v0 * xF * vF}%9.6f")
-
-                  println(f"idx: $idx%3d i: $i%3d j: $j%3d k: $k%3d bufIdx: $bufIdx%3d x1: $x1%3d x01: ${x1 * xF}%9.6f o0: ${floatBuffer.get(bufIdx + K / 2)}%9.6f v1: $v1%3d v01: ${v1 * vF}%9.6f vo1: ${arr(j * K + k + K / 2)}%9.6f")
-                  println(f"ref: ${floatBuffer.get(i * dim2 + j * K + k + K / 2) * arr(j * K + k + K / 2)}%9.6f here: ${x1 * v1 * xF * vF}%9.6f")
-                }
-
-                //sumb += floatBuffer.get(i * dim2 + j * K + k) * arr(j * K + k) + floatBuffer.get(i * dim2 + j * K + k + K / 2) * arr(j * K + k + K / 2)
-                sumq += (x0 * v0) + (x1 * v1)
-                //sumq += quantized(i * dim2 + j * K + k) * quantizedV(j * K + k)
-                k += 1
-
-              }
-              //println(f"i: $i%3d j: $j%3d sumq: ${sumq.toFloat * xF * vF}%9.6f sumb: $sumb%9.6f")
-
-              sum += sumq.toFloat * xF * vF
-
-              if (i == -1)
-                ???
-
-              j += 1
-            }
-
-            dest(i) = sum
-            i += 1
-          }
+          MathPrimitives.quantizeQ4(arr, quantizedV, quantizeVFactor)
+          MathPrimitives.matMulQ4(quantized, quantizeFactor, quantizedV, quantizeVFactor, dim1, dim2, dest.toFloatArray)
         }
 
         def toFloatArray: Array[Float] = ???
@@ -511,7 +315,6 @@ object Tensor2DMut {
   def apply(fs: Array[Float], dim1: Int, dim2: Int, offset: Int = 0): Tensor2DMut = new Tensor2DMut {
     require(fs.size >= offset + dim1 * dim2)
 
-    def floats(i: Int): Float = fs(offset + i)
     def size0: Int = dim1
     def size1: Int = dim2
 
@@ -571,7 +374,5 @@ object Tensor3DMut {
     def apply(i: Int): Tensor2DMut = Tensor2DMut(floats, dim2, dim3, offset = i * dim2 * dim3)
     def toFloatArray: Array[Float] = floats
     def toFloatBuffer: FloatBuffer = ???
-
-    def quantize: Tensor3D = ???
   }
 }
