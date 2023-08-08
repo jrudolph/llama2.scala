@@ -1,6 +1,7 @@
 import scala.scalanative.build._
 
 val scalaV = "3.3.0"
+val scalaTestV = "3.2.16"
 
 lazy val llama2 =
   crossProject(JVMPlatform, NativePlatform)
@@ -8,6 +9,11 @@ lazy val llama2 =
     .in(file("."))
     .settings(
       Seq(
+        libraryDependencies ++= Seq(
+          "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4",
+          "org.scalatest" %% "scalatest" % scalaTestV % Test,
+          "org.scalatestplus" %% "scalacheck-1-17" % (scalaTestV + ".0") % Test
+        ),
         scalaVersion := scalaV
       )
     )

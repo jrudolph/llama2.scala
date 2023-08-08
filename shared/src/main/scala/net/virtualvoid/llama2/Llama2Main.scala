@@ -9,14 +9,19 @@ object Llama2Main extends App {
     else new File("..")
   }
   //val checkpointFile = new File(baseDir, "llama2_7b.bin")
-  val checkpointFile = new File(baseDir, "stories15M.bin")
+  //val checkpointFile = new File(baseDir, "stories15M.bin")
+  //val checkpointFile = new File(baseDir, "stories42M.bin")
+  val checkpointFile = new File(baseDir, "stories110M.bin")
   val tokenizerFile = new File(baseDir, "tokenizer.bin")
 
-  val config = Config.fromFile(checkpointFile)
-  val vocab = Vocab.fromFile(config, tokenizerFile)
-  val weights = Weights.fromFile(config, checkpointFile)
+  val ggmlFile = new File(baseDir, "llama-2-7b.ggmlv3.q4_0.bin")
 
-  val useTensor = false
+  val (config, vocab, weights) = GgmlLoader.fromGgml(ggmlFile)
+  //val config = Config.fromFile(checkpointFile)
+  //val vocab = Vocab.fromFile(config, tokenizerFile)
+  //val weights = Weights.fromFile(config, checkpointFile)
+
+  val useTensor = true
   val transformer: Llama2Transformer =
     if (useTensor)
       Llama2TensorTransformer.init(config, weights)
@@ -24,7 +29,7 @@ object Llama2Main extends App {
       Llama2SimpleTransformer.init(config, weights)
 
   def run(): Unit = {
-    val steps = 256
+    val steps = 50
 
     var pos = 0
     var token = 1
@@ -46,6 +51,8 @@ object Llama2Main extends App {
     val tokensPerSecond = steps.toFloat / lastedNanos * 1e9
     println(f"$tokensPerSecond%5.2f tokens per second")
   }
+  run()
+  run()
   run()
   run()
   run()

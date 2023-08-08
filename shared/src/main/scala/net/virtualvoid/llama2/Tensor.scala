@@ -178,10 +178,14 @@ trait Tensor2D {
 
   def toFloatArray: Array[Float]
   def toFloatBuffer: FloatBuffer
+
+  def quantizeQ8: Tensor2D
+
+  def quantizeQ4: Tensor2D
 }
 
 object Tensor2D {
-  def apply(fb: FloatBuffer, dim1: Int, dim2: Int): Tensor2D = new Tensor2D {
+  def apply(fb: FloatBuffer, dim1: Int, dim2: Int): Tensor2D = new Tensor2D { outer =>
     val floatBuffer = fb.duplicate()
     def size0: Int = dim1
     def size1: Int = dim2
@@ -193,23 +197,109 @@ object Tensor2D {
     def `@`(v: Tensor1DMut): Op1D = new Op1D {
       override def into(dest: Tensor1DMut): Unit = {
         require(v.size == dim2)
-        val vs = v.toFloatArray
-        var i = 0
-        while (i < dim1) {
-          var j = 0
-          var sum = 0.0f
-          while (j < dim2) {
-            sum += floatBuffer.get(i * dim2 + j) * vs(j)
-            j += 1
-          }
-          dest(i) = sum
-          i += 1
-        }
+        MathPrimitives.matMul(floatBuffer, v.toFloatArray, dest.toFloatArray)
       }
     }
 
     def toFloatArray: Array[Float] = ???
     def toFloatBuffer: FloatBuffer = floatBuffer.duplicate()
+
+    def quantizeQ8: Tensor2D = {
+      val K = MathPrimitives.QK8_0
+      val (quantized, quantizeFactor) = MathPrimitives.quantizeQ8(floatBuffer, size0, size1)
+
+      new Tensor2D {
+        def size0: Int = dim1
+        def size1: Int = dim2
+
+        def apply(i: Int): Tensor1D = ???
+
+        def `@`(v: Tensor1DMut): Op1D = { dest =>
+          val arr = v.toFloatArray
+          require(arr.length % K == 0)
+
+          // FIXME: provide buffers from outside to avoid allocations per multiplication
+          // quantize v as well (it will be used `dim1` times so it is worth it)
+          val quantizedV = new Array[Byte](arr.size)
+          val numBlocksV = arr.size / K
+          val quantizeVFactor = new Array[Float](numBlocksV)
+
+          MathPrimitives.quantizeQ8(arr, quantizedV, quantizeVFactor)
+          MathPrimitives.matMulQ8(quantized, quantizeFactor, quantizedV, quantizeVFactor, dim1, dim2, dest.toFloatArray)
+        }
+
+        def toFloatArray: Array[Float] = ???
+        def toFloatBuffer: FloatBuffer = ???
+
+        def quantizeQ8: Tensor2D = this
+        def quantizeQ4: Tensor2D = outer.quantizeQ4
+      }
+    }
+
+    def quantizeQ4: Tensor2D = {
+      val K = MathPrimitives.QK4_0
+      require(size1 % K == 0)
+      val (quantized, quantizeFactor) = MathPrimitives.quantizeQ4(floatBuffer, size0, size1)
+
+      new Tensor2D {
+        def size0: Int = dim1
+        def size1: Int = dim2
+
+        def apply(i: Int): Tensor1D = new Tensor1D {
+          def size: Int = dim2
+
+          def copyToArray(dest: Array[Float], offset: Int): Unit = {
+            require(dest.length >= offset + size)
+            val numBlocksV = size / K
+            val blockOffset = i * size / K
+
+            var j = 0
+            while (j < numBlocksV) {
+              val blockId = blockOffset + j
+              val factor = quantizeFactor(blockId)
+
+              var k = 0
+              while (k < K / 2) {
+                val e = quantized(i * dim2 / 2 + j * K / 2 + k)
+
+                val x0 = (e & 0x0f) - 8
+                val x1 = ((e & 0xf0) >> 4) - 8
+
+                dest(offset + j * K + k) = x0 * factor
+                dest(offset + j * K + k + K / 2) = x1 * factor
+
+                k += 1
+              }
+
+              j += 1
+            }
+          }
+
+          def toFloatBuffer: FloatBuffer = ???
+          def ∘(other: Tensor1DMut): Op1D = ???
+        }
+
+        def `@`(v: Tensor1DMut): Op1D = { dest =>
+          val arr = v.toFloatArray
+          require(arr.length % K == 0)
+
+          // FIXME: provide buffers from outside to avoid allocations per multiplication
+          // quantize v as well (it will be used `dim1` times so it is worth it)
+          val quantizedV = new Array[Byte](arr.size)
+          val numBlocksV = arr.size / K
+          val quantizeVFactor = new Array[Float](numBlocksV)
+
+          MathPrimitives.quantizeQ8(arr, quantizedV, quantizeVFactor)
+          MathPrimitives.matMulQ4Q8(quantized, quantizeFactor, quantizedV, quantizeVFactor, dim1, dim2, dest.toFloatArray)
+        }
+
+        def toFloatArray: Array[Float] = ???
+        def toFloatBuffer: FloatBuffer = ???
+
+        def quantizeQ8: Tensor2D = outer.quantizeQ8
+        def quantizeQ4: Tensor2D = this
+      }
+    }
   }
 
   implicit def autoBuffer(t2: Tensor2D): FloatBuffer = t2.toFloatBuffer
@@ -225,7 +315,6 @@ object Tensor2DMut {
   def apply(fs: Array[Float], dim1: Int, dim2: Int, offset: Int = 0): Tensor2DMut = new Tensor2DMut {
     require(fs.size >= offset + dim1 * dim2)
 
-    def floats(i: Int): Float = fs(offset + i)
     def size0: Int = dim1
     def size1: Int = dim2
 
@@ -235,6 +324,8 @@ object Tensor2DMut {
 
     def toFloatArray: Array[Float] = if (offset == 0 && fs.length == dim1 * dim2) fs else ???
     def toFloatBuffer: FloatBuffer = ???
+    def quantizeQ8: Tensor2D = ???
+    def quantizeQ4: Tensor2D = ???
   }
 }
 trait Tensor3D {
