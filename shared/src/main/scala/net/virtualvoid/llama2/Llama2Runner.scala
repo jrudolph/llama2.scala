@@ -1,6 +1,8 @@
 package net.virtualvoid.llama2
 
-class Llama2Runner(transformer: Llama2Transformer, vocab: Vocab) {
+class Llama2Runner(transformer: Llama2Transformer, model: Llama2Model) {
+  import model.vocab
+
   def iterate(steps: Int): Iterator[String] = new Iterator[String] {
 
     var pos = 0

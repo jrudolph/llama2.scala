@@ -351,7 +351,8 @@ class Llama2SimpleTransformer(
 }
 
 object Llama2SimpleTransformer {
-  def init(config: Config, weights: Weights): Llama2Transformer = {
+  def init(model: Llama2Model): Llama2Transformer = {
+    import model._
     import config._
     new Llama2SimpleTransformer(
       config = config,

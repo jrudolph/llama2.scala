@@ -256,7 +256,8 @@ class Llama2TensorTransformer(
   }
 }
 object Llama2TensorTransformer {
-  def init(config: Config, weights: Weights): Llama2TensorTransformer = {
+  def init(model: Llama2Model): Llama2TensorTransformer = {
+    import model._
     import config._
     new Llama2TensorTransformer(
       config = config,

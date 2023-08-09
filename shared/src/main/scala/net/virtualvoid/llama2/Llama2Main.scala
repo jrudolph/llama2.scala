@@ -16,23 +16,21 @@ object Llama2Main extends App {
 
   val ggmlFile = new File(baseDir, "llama-2-7b.ggmlv3.q4_0.bin")
 
-  val (config, vocab, weights) = GgmlLoader.fromGgml(ggmlFile)
-  //  val config = Config.fromFile(checkpointFile)
-  //  val vocab = Vocab.fromFile(config, tokenizerFile)
-  //  val weights = Weights.fromFile(config, checkpointFile)
+  //val model = Llama2Model.fromLlama2CModel(checkpointFile, tokenizerFile)
+  val model = Llama2Model.fromGgml(ggmlFile)
 
   val useTensor = true
   val transformer: Llama2Transformer =
     if (useTensor)
-      Llama2TensorTransformer.init(config, weights)
+      Llama2TensorTransformer.init(model)
     else
-      Llama2SimpleTransformer.init(config, weights)
+      Llama2SimpleTransformer.init(model)
 
   VectMult.setParallelism(6)
 
   def run(): Unit = {
     val steps = 20
-    val runner = new Llama2Runner(transformer, vocab)
+    val runner = new Llama2Runner(transformer, model)
     val start = System.nanoTime()
     runner.iterate(steps).foreach { x => print(x); Console.out.flush() }
     println()
