@@ -3,7 +3,7 @@
 #include <immintrin.h>
 #include "net_virtualvoid_llama2_VectMult.h"
 
-int global_parallelism = 4;
+int global_parallelism = 1;
 
 // https://stackoverflow.com/a/23190168/7647
 static inline float _mm256_reduce_add_ps(__m256 x) {
