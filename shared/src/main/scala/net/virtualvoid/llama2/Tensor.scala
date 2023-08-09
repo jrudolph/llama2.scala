@@ -50,6 +50,9 @@ trait Tensor1DMut extends Tensor1D {
 
   def softmaxMut(): Unit
 
+  def rmsnorm(eps: Float): Op1D
+  def rmsnorm(weight: Tensor1D, eps: Float): Op1D
+
   def :=(op: Op1D): Unit
   def :=(orig: Tensor1D): Unit
 
@@ -150,6 +153,24 @@ object Tensor1DMut {
       this.expMut()
       // normalize
       this /= this.sum
+    }
+
+    def rmsnorm(eps: Float): Op1D = { dest =>
+      // calculate sum of squares
+      val sum = this * this
+
+      // and normalize
+      dest /= math.sqrt(sum / this.size + eps).toFloat
+    }
+    def rmsnorm(weight: Tensor1D, eps: Float): Op1D = { dest =>
+      // calculate sum of squares
+      val sum = this * this
+
+      // scale values by weight
+      dest := weight ∘ this
+
+      // and normalize
+      dest /= math.sqrt(sum / this.size + eps).toFloat
     }
 
     def :=(op: Op1D): Unit = op.into(this)

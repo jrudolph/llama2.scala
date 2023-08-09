@@ -65,7 +65,7 @@ class Llama2TensorTransformer(
       println(s"start layer $l")
 
       // attention rmsnorm
-      xb := rmsnorm(x, rms_att_weight(l))
+      xb := x.rmsnorm(rms_att_weight(l), eps)
 
       trace1d("attention rmsnorm", xb)
 
@@ -198,7 +198,7 @@ class Llama2TensorTransformer(
       trace1d("before ffn", x)
 
       // ffn rmsnorm
-      xb := rmsnorm(x, rms_ffn_weight(l))
+      xb := x.rmsnorm(rms_ffn_weight(l), eps)
 
       // ffn
       hb := w1(l) `@` xb
@@ -231,23 +231,12 @@ class Llama2TensorTransformer(
     }
 
     // final rmsnorm
-    x := rmsnorm(x, rms_final_weight)
+    x := x.rmsnorm(rms_final_weight, eps)
 
     // classifier into logits
     logits := wcls `@` x
 
     logits
-  }
-
-  def rmsnorm(x: Tensor1DMut, weight: Tensor1D): Op1D = { dest =>
-    // calculate sum of squares
-    val sum = x * x
-
-    // scale values by weight
-    dest := weight ∘ x
-
-    // and normalize
-    dest /= math.sqrt(sum / x.size + eps).toFloat
   }
 }
 object Llama2TensorTransformer {
