@@ -1,7 +1,18 @@
 package net.virtualvoid.llama2
+import java.io.File
 import java.nio.ByteBuffer
 
 object AVX2MathImplementation extends MathImplementation {
+  {
+    val libCandidates = Seq("libmatmul.so", "../libmatmul.so", "../c/libmatmul.so").map(new File(_))
+    libCandidates.find(_.exists) match {
+      case Some(f) => System.load(f.getAbsolutePath)
+      case None =>
+        println(s"Couldn't find libmatmul.so in any of ${libCandidates.map(_.getAbsolutePath).mkString(", ")} - trying to loading from system path")
+        System.loadLibrary("matmul")
+    }
+  }
+
   def matMul(m: FloatBuffer, vs: Array[Float], dest: Array[Float]): Unit =
     VectMult.matMul(m, vs, dest)
 

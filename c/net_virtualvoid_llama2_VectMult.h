@@ -9,6 +9,14 @@ extern "C" {
 #endif
 /*
  * Class:     net_virtualvoid_llama2_VectMult
+ * Method:    setParallelism
+ * Signature: (I)V
+ */
+JNIEXPORT void JNICALL Java_net_virtualvoid_llama2_VectMult_setParallelism
+  (JNIEnv *, jclass, jint);
+
+/*
+ * Class:     net_virtualvoid_llama2_VectMult
  * Method:    matMul
  * Signature: (Ljava/nio/FloatBuffer;[F[F)V
  */

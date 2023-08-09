@@ -14,5 +14,8 @@ abstract class MathImplementation {
 object MathImplementation {
   private[this] var TheMathImplementation: MathImplementation = AVX2MathImplementation
 
+  def setImplementation(impl: MathImplementation): Unit =
+    TheMathImplementation = impl
+
   def Default: MathImplementation = TheMathImplementation
 }
