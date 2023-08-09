@@ -17,6 +17,9 @@ lazy val llama2 =
         scalaVersion := scalaV
       )
     )
+    .jvmSettings(
+      javacOptions ++= Seq("-h", "c")
+    )
     .nativeSettings(
       nativeConfig ~= {
         _.withLTO(LTO.thin)

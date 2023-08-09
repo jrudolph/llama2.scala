@@ -2,7 +2,7 @@ package net.virtualvoid.llama2
 
 import java.nio.ByteOrder
 
-object MathPrimitives {
+object ScalaMathImplementation extends MathImplementation {
   def matMul(m: FloatBuffer, vs: Array[Float], dest: Array[Float]): Unit = {
     val dim2 = vs.length
     val dim1 = dest.length

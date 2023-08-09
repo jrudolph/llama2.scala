@@ -93,7 +93,7 @@ object GgmlLoader {
         case 2 /* Q4_0 */ =>
           require(nDims == 2, s"Unsupported number of dimensions for Q4_0 parameters '$name': $nDims")
           val buffer = dataBuffer
-          val shortBuffer = buffer.order(ByteOrder.LITTLE_ENDIAN).asShortBuffer()
+          val shortBuffer = dataBuffer.duplicate().order(ByteOrder.LITTLE_ENDIAN).asShortBuffer()
           val dim1 = dims(1)
           val dim2 = dims(0)
 
@@ -101,7 +101,7 @@ object GgmlLoader {
             new Tensor2D {
               def size0: Int = dim1
               def size1: Int = dim2
-              val K = MathPrimitives.QK4_0
+              val K = ScalaMathImplementation.QK4_0
 
               def apply(i: Int): Tensor1D = new Tensor1D {
                 def size: Int = dim2
@@ -143,20 +143,24 @@ object GgmlLoader {
               def quantizeFactor(idx: Int): Float = {
                 val bufIdx = idx * 18 / 2
                 val fp16d = shortBuffer.get(bufIdx)
-                MathPrimitives.fp16Tofp32(fp16d)
+                ScalaMathImplementation.fp16Tofp32(fp16d)
               }
+
+              val quantizedV = new Array[Byte](dim2)
+              val numBlocksV = dim2 / K
+              val quantizeVFactor = new Array[Float](numBlocksV)
 
               def `@`(v: Tensor1DMut): Op1D = { dest =>
                 val arr = v.toFloatArray
                 require(arr.length % K == 0)
 
                 // quantize v as well (it will be used `dim1` times so it is worth it)
-                val quantizedV = new Array[Byte](arr.size)
-                val numBlocksV = arr.size / K
-                val quantizeVFactor = new Array[Float](numBlocksV)
 
-                MathPrimitives.quantizeQ8(arr, quantizedV, quantizeVFactor)
-                MathPrimitives.matMulQ4Q8FromBuffer(buffer, quantizedV, quantizeVFactor, dim1, dim2, dest)
+                //val start = System.nanoTime()
+
+                MathImplementation.Default.quantizeQ8(arr, quantizedV, quantizeVFactor)
+                MathImplementation.Default.matMulQ4Q8FromBuffer(buffer, quantizedV, quantizeVFactor, dim1, dim2, dest)
+
               }
 
               def toFloatArray: Array[Float] = ???
@@ -176,7 +180,7 @@ object GgmlLoader {
     def d1(name: String): Tensor1D = allWeights(name).asInstanceOf[Tensor1D]
     def d2(name: String): Tensor2D = allWeights(name).asInstanceOf[Tensor2D]
     def byLayerD1(name: String): Tensor2D = new Tensor2D {
-      val layers = (0 until config.nLayers).map { i => d1(s"layers.$i.$name") }
+      val layers = (0 until config.nLayers).map { i => d1(s"layers.$i.$name") }.toArray
       val dim = layers.head.size
 
       def size0: Int = config.nLayers
@@ -189,15 +193,15 @@ object GgmlLoader {
       def quantizeQ4: Tensor2D = ???
     }
     def byLayerD2(name: String): Tensor3D = new Tensor3D {
-      val layers = (0 until config.nLayers).map { i => d2(s"layers.$i.$name") }
+      val layers = (0 until config.nLayers).map { i => d2(s"layers.$i.$name") }.toArray
       val dim0 = layers.head.size0
       val dim1 = layers.head.size1
 
-      override def size0: Int = config.nLayers
-      override def size1: Int = dim0
-      override def size2: Int = dim1
+      def size0: Int = config.nLayers
+      def size1: Int = dim0
+      def size2: Int = dim1
 
-      override def apply(i: Int): Tensor2D = layers(i)
+      def apply(i: Int): Tensor2D = layers(i)
 
       def toFloatArray: Array[Float] = ???
       def toFloatBuffer: FloatBuffer = ???

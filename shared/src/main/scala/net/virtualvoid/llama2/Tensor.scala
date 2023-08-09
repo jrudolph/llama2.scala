@@ -231,7 +231,9 @@ object Tensor2D {
     def `@`(v: Tensor1DMut): Op1D = new Op1D {
       override def into(dest: Tensor1DMut): Unit = {
         require(v.size == dim2)
-        MathPrimitives.matMul(floatBuffer, v.toFloatArray, dest.toFloatArray)
+        require(v.size % 16 == 0)
+
+        MathImplementation.Default.matMul(floatBuffer, v.toFloatArray, dest.toFloatArray)
       }
     }
 
@@ -239,8 +241,8 @@ object Tensor2D {
     def toFloatBuffer: FloatBuffer = floatBuffer.duplicate()
 
     def quantizeQ8: Tensor2D = {
-      val K = MathPrimitives.QK8_0
-      val (quantized, quantizeFactor) = MathPrimitives.quantizeQ8(floatBuffer, size0, size1)
+      val K = ScalaMathImplementation.QK8_0
+      val (quantized, quantizeFactor) = MathImplementation.Default.quantizeQ8(floatBuffer, size0, size1)
 
       new Tensor2D {
         def size0: Int = dim1
@@ -258,8 +260,8 @@ object Tensor2D {
           val numBlocksV = arr.size / K
           val quantizeVFactor = new Array[Float](numBlocksV)
 
-          MathPrimitives.quantizeQ8(arr, quantizedV, quantizeVFactor)
-          MathPrimitives.matMulQ8(quantized, quantizeFactor, quantizedV, quantizeVFactor, dim1, dim2, dest.toFloatArray)
+          MathImplementation.Default.quantizeQ8(arr, quantizedV, quantizeVFactor)
+          MathImplementation.Default.matMulQ8(quantized, quantizeFactor, quantizedV, quantizeVFactor, dim1, dim2, dest.toFloatArray)
         }
 
         def toFloatArray: Array[Float] = ???
@@ -271,9 +273,9 @@ object Tensor2D {
     }
 
     def quantizeQ4: Tensor2D = {
-      val K = MathPrimitives.QK4_0
+      val K = ScalaMathImplementation.QK4_0
       require(size1 % K == 0)
-      val (quantized, quantizeFactor) = MathPrimitives.quantizeQ4(floatBuffer, size0, size1)
+      val (quantized, quantizeFactor) = MathImplementation.Default.quantizeQ4(floatBuffer, size0, size1)
 
       new Tensor2D {
         def size0: Int = dim1
@@ -323,8 +325,8 @@ object Tensor2D {
           val numBlocksV = arr.size / K
           val quantizeVFactor = new Array[Float](numBlocksV)
 
-          MathPrimitives.quantizeQ8(arr, quantizedV, quantizeVFactor)
-          MathPrimitives.matMulQ4Q8(quantized, quantizeFactor, quantizedV, quantizeVFactor, dim1, dim2, dest.toFloatArray)
+          MathImplementation.Default.quantizeQ8(arr, quantizedV, quantizeVFactor)
+          MathImplementation.Default.matMulQ4Q8(quantized, quantizeFactor, quantizedV, quantizeVFactor, dim1, dim2, dest.toFloatArray)
         }
 
         def toFloatArray: Array[Float] = ???
