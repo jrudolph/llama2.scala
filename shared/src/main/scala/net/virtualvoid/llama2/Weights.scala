@@ -19,12 +19,15 @@ trait Weights {
   def freq_cis_real: Tensor2D
   def freq_cis_imag: Tensor2D
   def wcls: Tensor2D
+
+  def quantizeQ4: Weights
+  def quantizeQ8: Weights
 }
 object Weights {
   def fromFile(config: Config, checkpointFile: File): Weights =
     Weights(config, Buffers.fromFile(checkpointFile, Config.HeaderSize))
 
-  def apply(config: Config, buffers: Buffers): Weights = new Weights {
+  def apply(config: Config, buffers: Buffers): Weights = new Weights { orig =>
     import buffers._
 
     val tokenEmbeddingTable = d2(config.vocabSize, config.dim).quantizeQ4
@@ -41,7 +44,44 @@ object Weights {
     val headSize = config.dim / config.nHeads
     val freq_cis_real = d2(config.seqLen, headSize / 2)
     val freq_cis_imag = d2(config.seqLen, headSize / 2)
-    val wcls = if (config.sharedWeights) tokenEmbeddingTable.quantizeQ4 else d2(config.vocabSize, config.dim).quantizeQ4
-  }
+    val wcls = if (config.sharedWeights) tokenEmbeddingTable else d2(config.vocabSize, config.dim)
 
+    def quantizeQ4: Weights = new Weights {
+      val tokenEmbeddingTable: Tensor2D = orig.tokenEmbeddingTable.quantizeQ4
+      val rms_att_weight: Tensor2D = orig.rms_att_weight
+      val wq: Tensor3D = orig.wq.quantizeQ4
+      val wk: Tensor3D = orig.wk.quantizeQ4
+      val wv: Tensor3D = orig.wv.quantizeQ4
+      val wo: Tensor3D = orig.wo.quantizeQ4
+      val rms_ffn_weight: Tensor2D = orig.rms_ffn_weight
+      val w1: Tensor3D = orig.w1.quantizeQ4
+      val w2: Tensor3D = orig.w2.quantizeQ4
+      val w3: Tensor3D = orig.w3.quantizeQ4
+      val rms_final_weight: Tensor1D = orig.rms_final_weight
+      val freq_cis_real: Tensor2D = orig.freq_cis_real
+      val freq_cis_imag: Tensor2D = orig.freq_cis_imag
+      val wcls: Tensor2D = if (config.sharedWeights) tokenEmbeddingTable else orig.wcls.quantizeQ4
+
+      def quantizeQ4: Weights = this
+      def quantizeQ8: Weights = orig.quantizeQ8
+    }
+    def quantizeQ8: Weights = new Weights {
+      val tokenEmbeddingTable: Tensor2D = orig.tokenEmbeddingTable.quantizeQ8
+      val rms_att_weight: Tensor2D = orig.rms_att_weight
+      val wq: Tensor3D = orig.wq.quantizeQ8
+      val wk: Tensor3D = orig.wk.quantizeQ8
+      val wv: Tensor3D = orig.wv.quantizeQ8
+      val wo: Tensor3D = orig.wo.quantizeQ8
+      val rms_ffn_weight: Tensor2D = orig.rms_ffn_weight
+      val w1: Tensor3D = orig.w1.quantizeQ8
+      val w2: Tensor3D = orig.w2.quantizeQ8
+      val w3: Tensor3D = orig.w3.quantizeQ8
+      val rms_final_weight: Tensor1D = orig.rms_final_weight
+      val freq_cis_real: Tensor2D = orig.freq_cis_real
+      val freq_cis_imag: Tensor2D = orig.freq_cis_imag
+      val wcls: Tensor2D = if (config.sharedWeights) tokenEmbeddingTable else orig.wcls.quantizeQ8
+      def quantizeQ4: Weights = orig.quantizeQ4
+      def quantizeQ8: Weights = this
+    }
+  }
 }

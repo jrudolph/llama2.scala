@@ -248,7 +248,7 @@ object Tensor2D {
         def size0: Int = dim1
         def size1: Int = dim2
 
-        def apply(i: Int): Tensor1D = ???
+        def apply(i: Int): Tensor1D = outer.apply(i) // FIXME: use quantized elements here?
 
         def `@`(v: Tensor1DMut): Op1D = { dest =>
           val arr = v.toFloatArray
@@ -372,11 +372,14 @@ trait Tensor3D {
 
   def apply(i: Int): Tensor2D
 
+  def quantizeQ4: Tensor3D
+  def quantizeQ8: Tensor3D
+
   def toFloatArray: Array[Float]
   def toFloatBuffer: FloatBuffer
 }
 object Tensor3D {
-  def apply(floatBuffer: FloatBuffer, dim1: Int, dim2: Int, dim3: Int): Tensor3D = new Tensor3D {
+  def apply(floatBuffer: FloatBuffer, dim1: Int, dim2: Int, dim3: Int): Tensor3D = new Tensor3D { outer =>
     def size0: Int = dim1
     def size1: Int = dim2
     def size2: Int = dim3
@@ -384,6 +387,33 @@ object Tensor3D {
     def apply(i: Int): Tensor2D = {
       val source = floatBuffer.duplicate().position(i * dim2 * dim3).slice()
       Tensor2D(source, dim2, dim3)
+    }
+
+    override def quantizeQ4: Tensor3D = new Tensor3D {
+      override def size0: Int = dim1
+      override def size1: Int = dim2
+      override def size2: Int = dim3
+
+      override def apply(i: Int): Tensor2D = outer.apply(i).quantizeQ4
+
+      override def quantizeQ4: Tensor3D = this
+      override def quantizeQ8: Tensor3D = outer.quantizeQ8
+
+      override def toFloatArray: Array[Float] = ???
+      override def toFloatBuffer: FloatBuffer = ???
+    }
+
+    override def quantizeQ8: Tensor3D = new Tensor3D {
+      def size0: Int = dim1
+      def size1: Int = dim2
+      def size2: Int = dim3
+
+      def apply(i: Int): Tensor2D = outer.apply(i).quantizeQ8
+      def quantizeQ4: Tensor3D = outer.quantizeQ4
+      def quantizeQ8: Tensor3D = this
+
+      def toFloatArray: Array[Float] = ???
+      def toFloatBuffer: FloatBuffer = ???
     }
 
     def toFloatArray: Array[Float] = ???
@@ -408,6 +438,10 @@ object Tensor3DMut {
     def size2: Int = dim3
 
     def apply(i: Int): Tensor2DMut = Tensor2DMut(floats, dim2, dim3, offset = i * dim2 * dim3)
+
+    def quantizeQ4: Tensor3D = ???
+    def quantizeQ8: Tensor3D = ???
+
     def toFloatArray: Array[Float] = floats
     def toFloatBuffer: FloatBuffer = ???
   }
