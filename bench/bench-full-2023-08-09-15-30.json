@@ -1,0 +1,2380 @@
+[
+    {
+        "jmhVersion" : "1.36",
+        "benchmark" : "net.virtualvoid.llama2.Llama2Benchmark.run",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 2,
+        "jvm" : "/home/johannes/opt/graalvm-jdk-17.0.8+9.1/bin/java",
+        "jvmArgs" : [
+            "-server",
+            "-Xms15g",
+            "-Xmx15g",
+            "-XX:NewSize=500m",
+            "-XX:MaxNewSize=500m",
+            "-XX:InitialCodeCacheSize=512m",
+            "-XX:ReservedCodeCacheSize=512m",
+            "-XX:+AlwaysPreTouch"
+        ],
+        "jdkVersion" : "17.0.8",
+        "vmName" : "Java HotSpot(TM) 64-Bit Server VM",
+        "vmVersion" : "17.0.8+9-LTS-jvmci-23.0-b14",
+        "warmupIterations" : 3,
+        "warmupTime" : "3 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 2,
+        "measurementTime" : "3 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "impl" : "scala",
+            "model" : "stories15M.bin",
+            "quantization" : "none",
+            "threads" : "1"
+        },
+        "primaryMetric" : {
+            "score" : 65.77288086271537,
+            "scoreError" : 0.4507248079246225,
+            "scoreConfidence" : [
+                65.32215605479074,
+                66.22360567064
+            ],
+            "scorePercentiles" : {
+                "0.0" : 65.67155082320464,
+                "50.0" : 65.79823433412679,
+                "90.0" : 65.82350395940323,
+                "95.0" : 65.82350395940323,
+                "99.0" : 65.82350395940323,
+                "99.9" : 65.82350395940323,
+                "99.99" : 65.82350395940323,
+                "99.999" : 65.82350395940323,
+                "99.9999" : 65.82350395940323,
+                "100.0" : 65.82350395940323
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    65.67155082320464,
+                    65.8137130912345
+                ],
+                [
+                    65.82350395940323,
+                    65.78275557701909
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.36",
+        "benchmark" : "net.virtualvoid.llama2.Llama2Benchmark.run",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 2,
+        "jvm" : "/home/johannes/opt/graalvm-jdk-17.0.8+9.1/bin/java",
+        "jvmArgs" : [
+            "-server",
+            "-Xms15g",
+            "-Xmx15g",
+            "-XX:NewSize=500m",
+            "-XX:MaxNewSize=500m",
+            "-XX:InitialCodeCacheSize=512m",
+            "-XX:ReservedCodeCacheSize=512m",
+            "-XX:+AlwaysPreTouch"
+        ],
+        "jdkVersion" : "17.0.8",
+        "vmName" : "Java HotSpot(TM) 64-Bit Server VM",
+        "vmVersion" : "17.0.8+9-LTS-jvmci-23.0-b14",
+        "warmupIterations" : 3,
+        "warmupTime" : "3 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 2,
+        "measurementTime" : "3 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "impl" : "scala",
+            "model" : "stories15M.bin",
+            "quantization" : "Q8",
+            "threads" : "1"
+        },
+        "primaryMetric" : {
+            "score" : 56.559116055855455,
+            "scoreError" : 1.8186282816777468,
+            "scoreConfidence" : [
+                54.74048777417771,
+                58.3777443375332
+            ],
+            "scorePercentiles" : {
+                "0.0" : 56.405773381479946,
+                "50.0" : 56.425076411383685,
+                "90.0" : 56.980538019174524,
+                "95.0" : 56.980538019174524,
+                "99.0" : 56.980538019174524,
+                "99.9" : 56.980538019174524,
+                "99.99" : 56.980538019174524,
+                "99.999" : 56.980538019174524,
+                "99.9999" : 56.980538019174524,
+                "100.0" : 56.980538019174524
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    56.980538019174524,
+                    56.44200033790564
+                ],
+                [
+                    56.40815248486172,
+                    56.405773381479946
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.36",
+        "benchmark" : "net.virtualvoid.llama2.Llama2Benchmark.run",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 2,
+        "jvm" : "/home/johannes/opt/graalvm-jdk-17.0.8+9.1/bin/java",
+        "jvmArgs" : [
+            "-server",
+            "-Xms15g",
+            "-Xmx15g",
+            "-XX:NewSize=500m",
+            "-XX:MaxNewSize=500m",
+            "-XX:InitialCodeCacheSize=512m",
+            "-XX:ReservedCodeCacheSize=512m",
+            "-XX:+AlwaysPreTouch"
+        ],
+        "jdkVersion" : "17.0.8",
+        "vmName" : "Java HotSpot(TM) 64-Bit Server VM",
+        "vmVersion" : "17.0.8+9-LTS-jvmci-23.0-b14",
+        "warmupIterations" : 3,
+        "warmupTime" : "3 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 2,
+        "measurementTime" : "3 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "impl" : "scala",
+            "model" : "stories15M.bin",
+            "quantization" : "Q4",
+            "threads" : "1"
+        },
+        "primaryMetric" : {
+            "score" : 65.21442356962746,
+            "scoreError" : 2.1522242980611836,
+            "scoreConfidence" : [
+                63.06219927156627,
+                67.36664786768864
+            ],
+            "scorePercentiles" : {
+                "0.0" : 64.77922415552344,
+                "50.0" : 65.28281307324443,
+                "90.0" : 65.51284397649755,
+                "95.0" : 65.51284397649755,
+                "99.0" : 65.51284397649755,
+                "99.9" : 65.51284397649755,
+                "99.99" : 65.51284397649755,
+                "99.999" : 65.51284397649755,
+                "99.9999" : 65.51284397649755,
+                "100.0" : 65.51284397649755
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    65.51284397649755,
+                    65.43277566790029
+                ],
+                [
+                    64.77922415552344,
+                    65.13285047858857
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.36",
+        "benchmark" : "net.virtualvoid.llama2.Llama2Benchmark.run",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 2,
+        "jvm" : "/home/johannes/opt/graalvm-jdk-17.0.8+9.1/bin/java",
+        "jvmArgs" : [
+            "-server",
+            "-Xms15g",
+            "-Xmx15g",
+            "-XX:NewSize=500m",
+            "-XX:MaxNewSize=500m",
+            "-XX:InitialCodeCacheSize=512m",
+            "-XX:ReservedCodeCacheSize=512m",
+            "-XX:+AlwaysPreTouch"
+        ],
+        "jdkVersion" : "17.0.8",
+        "vmName" : "Java HotSpot(TM) 64-Bit Server VM",
+        "vmVersion" : "17.0.8+9-LTS-jvmci-23.0-b14",
+        "warmupIterations" : 3,
+        "warmupTime" : "3 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 2,
+        "measurementTime" : "3 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "impl" : "scala",
+            "model" : "stories42M.bin",
+            "quantization" : "none",
+            "threads" : "1"
+        },
+        "primaryMetric" : {
+            "score" : 23.536113865054652,
+            "scoreError" : 0.8605883013969072,
+            "scoreConfidence" : [
+                22.675525563657747,
+                24.396702166451558
+            ],
+            "scorePercentiles" : {
+                "0.0" : 23.428319861788058,
+                "50.0" : 23.505680079433986,
+                "90.0" : 23.704775439562574,
+                "95.0" : 23.704775439562574,
+                "99.0" : 23.704775439562574,
+                "99.9" : 23.704775439562574,
+                "99.99" : 23.704775439562574,
+                "99.999" : 23.704775439562574,
+                "99.9999" : 23.704775439562574,
+                "100.0" : 23.704775439562574
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    23.428319861788058,
+                    23.580812061064957
+                ],
+                [
+                    23.430548097803012,
+                    23.704775439562574
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.36",
+        "benchmark" : "net.virtualvoid.llama2.Llama2Benchmark.run",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 2,
+        "jvm" : "/home/johannes/opt/graalvm-jdk-17.0.8+9.1/bin/java",
+        "jvmArgs" : [
+            "-server",
+            "-Xms15g",
+            "-Xmx15g",
+            "-XX:NewSize=500m",
+            "-XX:MaxNewSize=500m",
+            "-XX:InitialCodeCacheSize=512m",
+            "-XX:ReservedCodeCacheSize=512m",
+            "-XX:+AlwaysPreTouch"
+        ],
+        "jdkVersion" : "17.0.8",
+        "vmName" : "Java HotSpot(TM) 64-Bit Server VM",
+        "vmVersion" : "17.0.8+9-LTS-jvmci-23.0-b14",
+        "warmupIterations" : 3,
+        "warmupTime" : "3 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 2,
+        "measurementTime" : "3 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "impl" : "scala",
+            "model" : "stories42M.bin",
+            "quantization" : "Q8",
+            "threads" : "1"
+        },
+        "primaryMetric" : {
+            "score" : 21.701433815742323,
+            "scoreError" : 0.80385151055693,
+            "scoreConfidence" : [
+                20.89758230518539,
+                22.505285326299255
+            ],
+            "scorePercentiles" : {
+                "0.0" : 21.527296601990052,
+                "50.0" : 21.741415958525245,
+                "90.0" : 21.79560674392876,
+                "95.0" : 21.79560674392876,
+                "99.0" : 21.79560674392876,
+                "99.9" : 21.79560674392876,
+                "99.99" : 21.79560674392876,
+                "99.999" : 21.79560674392876,
+                "99.9999" : 21.79560674392876,
+                "100.0" : 21.79560674392876
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    21.527296601990052,
+                    21.786328770451114
+                ],
+                [
+                    21.696503146599373,
+                    21.79560674392876
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.36",
+        "benchmark" : "net.virtualvoid.llama2.Llama2Benchmark.run",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 2,
+        "jvm" : "/home/johannes/opt/graalvm-jdk-17.0.8+9.1/bin/java",
+        "jvmArgs" : [
+            "-server",
+            "-Xms15g",
+            "-Xmx15g",
+            "-XX:NewSize=500m",
+            "-XX:MaxNewSize=500m",
+            "-XX:InitialCodeCacheSize=512m",
+            "-XX:ReservedCodeCacheSize=512m",
+            "-XX:+AlwaysPreTouch"
+        ],
+        "jdkVersion" : "17.0.8",
+        "vmName" : "Java HotSpot(TM) 64-Bit Server VM",
+        "vmVersion" : "17.0.8+9-LTS-jvmci-23.0-b14",
+        "warmupIterations" : 3,
+        "warmupTime" : "3 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 2,
+        "measurementTime" : "3 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "impl" : "scala",
+            "model" : "stories42M.bin",
+            "quantization" : "Q4",
+            "threads" : "1"
+        },
+        "primaryMetric" : {
+            "score" : 24.477570668863102,
+            "scoreError" : 1.027695638769051,
+            "scoreConfidence" : [
+                23.449875030094052,
+                25.50526630763215
+            ],
+            "scorePercentiles" : {
+                "0.0" : 24.24575618730402,
+                "50.0" : 24.533666362066164,
+                "90.0" : 24.597193764016062,
+                "95.0" : 24.597193764016062,
+                "99.0" : 24.597193764016062,
+                "99.9" : 24.597193764016062,
+                "99.99" : 24.597193764016062,
+                "99.999" : 24.597193764016062,
+                "99.9999" : 24.597193764016062,
+                "100.0" : 24.597193764016062
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    24.24575618730402,
+                    24.561390410512782
+                ],
+                [
+                    24.597193764016062,
+                    24.505942313619542
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.36",
+        "benchmark" : "net.virtualvoid.llama2.Llama2Benchmark.run",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 2,
+        "jvm" : "/home/johannes/opt/graalvm-jdk-17.0.8+9.1/bin/java",
+        "jvmArgs" : [
+            "-server",
+            "-Xms15g",
+            "-Xmx15g",
+            "-XX:NewSize=500m",
+            "-XX:MaxNewSize=500m",
+            "-XX:InitialCodeCacheSize=512m",
+            "-XX:ReservedCodeCacheSize=512m",
+            "-XX:+AlwaysPreTouch"
+        ],
+        "jdkVersion" : "17.0.8",
+        "vmName" : "Java HotSpot(TM) 64-Bit Server VM",
+        "vmVersion" : "17.0.8+9-LTS-jvmci-23.0-b14",
+        "warmupIterations" : 3,
+        "warmupTime" : "3 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 2,
+        "measurementTime" : "3 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "impl" : "scala",
+            "model" : "stories110M.bin",
+            "quantization" : "none",
+            "threads" : "1"
+        },
+        "primaryMetric" : {
+            "score" : 8.890044978012215,
+            "scoreError" : 0.05783247870403092,
+            "scoreConfidence" : [
+                8.832212499308184,
+                8.947877456716245
+            ],
+            "scorePercentiles" : {
+                "0.0" : 8.88314694114809,
+                "50.0" : 8.887080164040654,
+                "90.0" : 8.902872642819462,
+                "95.0" : 8.902872642819462,
+                "99.0" : 8.902872642819462,
+                "99.9" : 8.902872642819462,
+                "99.99" : 8.902872642819462,
+                "99.999" : 8.902872642819462,
+                "99.9999" : 8.902872642819462,
+                "100.0" : 8.902872642819462
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    8.88314694114809,
+                    8.902872642819462
+                ],
+                [
+                    8.884780595299425,
+                    8.889379732781885
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.36",
+        "benchmark" : "net.virtualvoid.llama2.Llama2Benchmark.run",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 2,
+        "jvm" : "/home/johannes/opt/graalvm-jdk-17.0.8+9.1/bin/java",
+        "jvmArgs" : [
+            "-server",
+            "-Xms15g",
+            "-Xmx15g",
+            "-XX:NewSize=500m",
+            "-XX:MaxNewSize=500m",
+            "-XX:InitialCodeCacheSize=512m",
+            "-XX:ReservedCodeCacheSize=512m",
+            "-XX:+AlwaysPreTouch"
+        ],
+        "jdkVersion" : "17.0.8",
+        "vmName" : "Java HotSpot(TM) 64-Bit Server VM",
+        "vmVersion" : "17.0.8+9-LTS-jvmci-23.0-b14",
+        "warmupIterations" : 3,
+        "warmupTime" : "3 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 2,
+        "measurementTime" : "3 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "impl" : "scala",
+            "model" : "stories110M.bin",
+            "quantization" : "Q8",
+            "threads" : "1"
+        },
+        "primaryMetric" : {
+            "score" : 8.405257208329283,
+            "scoreError" : 0.06454593400616288,
+            "scoreConfidence" : [
+                8.340711274323121,
+                8.469803142335445
+            ],
+            "scorePercentiles" : {
+                "0.0" : 8.390710893006652,
+                "50.0" : 8.408874157441888,
+                "90.0" : 8.412569625426704,
+                "95.0" : 8.412569625426704,
+                "99.0" : 8.412569625426704,
+                "99.9" : 8.412569625426704,
+                "99.99" : 8.412569625426704,
+                "99.999" : 8.412569625426704,
+                "99.9999" : 8.412569625426704,
+                "100.0" : 8.412569625426704
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    8.410884418876453,
+                    8.390710893006652
+                ],
+                [
+                    8.412569625426704,
+                    8.406863896007323
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.36",
+        "benchmark" : "net.virtualvoid.llama2.Llama2Benchmark.run",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 2,
+        "jvm" : "/home/johannes/opt/graalvm-jdk-17.0.8+9.1/bin/java",
+        "jvmArgs" : [
+            "-server",
+            "-Xms15g",
+            "-Xmx15g",
+            "-XX:NewSize=500m",
+            "-XX:MaxNewSize=500m",
+            "-XX:InitialCodeCacheSize=512m",
+            "-XX:ReservedCodeCacheSize=512m",
+            "-XX:+AlwaysPreTouch"
+        ],
+        "jdkVersion" : "17.0.8",
+        "vmName" : "Java HotSpot(TM) 64-Bit Server VM",
+        "vmVersion" : "17.0.8+9-LTS-jvmci-23.0-b14",
+        "warmupIterations" : 3,
+        "warmupTime" : "3 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 2,
+        "measurementTime" : "3 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "impl" : "scala",
+            "model" : "stories110M.bin",
+            "quantization" : "Q4",
+            "threads" : "1"
+        },
+        "primaryMetric" : {
+            "score" : 9.649507813498852,
+            "scoreError" : 0.16803432901840173,
+            "scoreConfidence" : [
+                9.48147348448045,
+                9.817542142517254
+            ],
+            "scorePercentiles" : {
+                "0.0" : 9.61226887852988,
+                "50.0" : 9.656546038543874,
+                "90.0" : 9.672670298377774,
+                "95.0" : 9.672670298377774,
+                "99.0" : 9.672670298377774,
+                "99.9" : 9.672670298377774,
+                "99.99" : 9.672670298377774,
+                "99.999" : 9.672670298377774,
+                "99.9999" : 9.672670298377774,
+                "100.0" : 9.672670298377774
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    9.658311482256755,
+                    9.672670298377774
+                ],
+                [
+                    9.654780594830994,
+                    9.61226887852988
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.36",
+        "benchmark" : "net.virtualvoid.llama2.Llama2Benchmark.run",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 2,
+        "jvm" : "/home/johannes/opt/graalvm-jdk-17.0.8+9.1/bin/java",
+        "jvmArgs" : [
+            "-server",
+            "-Xms15g",
+            "-Xmx15g",
+            "-XX:NewSize=500m",
+            "-XX:MaxNewSize=500m",
+            "-XX:InitialCodeCacheSize=512m",
+            "-XX:ReservedCodeCacheSize=512m",
+            "-XX:+AlwaysPreTouch"
+        ],
+        "jdkVersion" : "17.0.8",
+        "vmName" : "Java HotSpot(TM) 64-Bit Server VM",
+        "vmVersion" : "17.0.8+9-LTS-jvmci-23.0-b14",
+        "warmupIterations" : 3,
+        "warmupTime" : "3 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 2,
+        "measurementTime" : "3 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "impl" : "scala",
+            "model" : "llama2_7b.bin",
+            "quantization" : "Q8",
+            "threads" : "1"
+        },
+        "primaryMetric" : {
+            "score" : 0.14242590490983897,
+            "scoreError" : 7.335903131160965E-4,
+            "scoreConfidence" : [
+                0.14169231459672288,
+                0.14315949522295507
+            ],
+            "scorePercentiles" : {
+                "0.0" : 0.14227729760477445,
+                "50.0" : 0.1424376794098109,
+                "90.0" : 0.14255096321495966,
+                "95.0" : 0.14255096321495966,
+                "99.0" : 0.14255096321495966,
+                "99.9" : 0.14255096321495966,
+                "99.99" : 0.14255096321495966,
+                "99.999" : 0.14255096321495966,
+                "99.9999" : 0.14255096321495966,
+                "100.0" : 0.14255096321495966
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    0.14245587347428376,
+                    0.142419485345338
+                ],
+                [
+                    0.14255096321495966,
+                    0.14227729760477445
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.36",
+        "benchmark" : "net.virtualvoid.llama2.Llama2Benchmark.run",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 2,
+        "jvm" : "/home/johannes/opt/graalvm-jdk-17.0.8+9.1/bin/java",
+        "jvmArgs" : [
+            "-server",
+            "-Xms15g",
+            "-Xmx15g",
+            "-XX:NewSize=500m",
+            "-XX:MaxNewSize=500m",
+            "-XX:InitialCodeCacheSize=512m",
+            "-XX:ReservedCodeCacheSize=512m",
+            "-XX:+AlwaysPreTouch"
+        ],
+        "jdkVersion" : "17.0.8",
+        "vmName" : "Java HotSpot(TM) 64-Bit Server VM",
+        "vmVersion" : "17.0.8+9-LTS-jvmci-23.0-b14",
+        "warmupIterations" : 3,
+        "warmupTime" : "3 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 2,
+        "measurementTime" : "3 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "impl" : "scala",
+            "model" : "llama2_7b.bin",
+            "quantization" : "Q4",
+            "threads" : "1"
+        },
+        "primaryMetric" : {
+            "score" : 0.1634127113430485,
+            "scoreError" : 0.007121182805164993,
+            "scoreConfidence" : [
+                0.1562915285378835,
+                0.1705338941482135
+            ],
+            "scorePercentiles" : {
+                "0.0" : 0.16184682977229792,
+                "50.0" : 0.1637104675655039,
+                "90.0" : 0.1643830804688883,
+                "95.0" : 0.1643830804688883,
+                "99.0" : 0.1643830804688883,
+                "99.9" : 0.1643830804688883,
+                "99.99" : 0.1643830804688883,
+                "99.999" : 0.1643830804688883,
+                "99.9999" : 0.1643830804688883,
+                "100.0" : 0.1643830804688883
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    0.1635202501306213,
+                    0.1643830804688883
+                ],
+                [
+                    0.16184682977229792,
+                    0.16390068500038646
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.36",
+        "benchmark" : "net.virtualvoid.llama2.Llama2Benchmark.run",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 2,
+        "jvm" : "/home/johannes/opt/graalvm-jdk-17.0.8+9.1/bin/java",
+        "jvmArgs" : [
+            "-server",
+            "-Xms15g",
+            "-Xmx15g",
+            "-XX:NewSize=500m",
+            "-XX:MaxNewSize=500m",
+            "-XX:InitialCodeCacheSize=512m",
+            "-XX:ReservedCodeCacheSize=512m",
+            "-XX:+AlwaysPreTouch"
+        ],
+        "jdkVersion" : "17.0.8",
+        "vmName" : "Java HotSpot(TM) 64-Bit Server VM",
+        "vmVersion" : "17.0.8+9-LTS-jvmci-23.0-b14",
+        "warmupIterations" : 3,
+        "warmupTime" : "3 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 2,
+        "measurementTime" : "3 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "impl" : "scala",
+            "model" : "llama-2-7b.ggmlv3.q4_0.bin",
+            "quantization" : "none",
+            "threads" : "1"
+        },
+        "primaryMetric" : {
+            "score" : 0.12858255797918405,
+            "scoreError" : 0.00944370525043862,
+            "scoreConfidence" : [
+                0.11913885272874543,
+                0.13802626322962266
+            ],
+            "scorePercentiles" : {
+                "0.0" : 0.12665555364393316,
+                "50.0" : 0.12893133862789136,
+                "90.0" : 0.12981200101702042,
+                "95.0" : 0.12981200101702042,
+                "99.0" : 0.12981200101702042,
+                "99.9" : 0.12981200101702042,
+                "99.99" : 0.12981200101702042,
+                "99.999" : 0.12981200101702042,
+                "99.9999" : 0.12981200101702042,
+                "100.0" : 0.12981200101702042
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    0.128246098831769,
+                    0.12961657842401375
+                ],
+                [
+                    0.12981200101702042,
+                    0.12665555364393316
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.36",
+        "benchmark" : "net.virtualvoid.llama2.Llama2Benchmark.run",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 2,
+        "jvm" : "/home/johannes/opt/graalvm-jdk-17.0.8+9.1/bin/java",
+        "jvmArgs" : [
+            "-server",
+            "-Xms15g",
+            "-Xmx15g",
+            "-XX:NewSize=500m",
+            "-XX:MaxNewSize=500m",
+            "-XX:InitialCodeCacheSize=512m",
+            "-XX:ReservedCodeCacheSize=512m",
+            "-XX:+AlwaysPreTouch"
+        ],
+        "jdkVersion" : "17.0.8",
+        "vmName" : "Java HotSpot(TM) 64-Bit Server VM",
+        "vmVersion" : "17.0.8+9-LTS-jvmci-23.0-b14",
+        "warmupIterations" : 3,
+        "warmupTime" : "3 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 2,
+        "measurementTime" : "3 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "impl" : "native-avx2",
+            "model" : "stories15M.bin",
+            "quantization" : "none",
+            "threads" : "1"
+        },
+        "primaryMetric" : {
+            "score" : 374.19282175747423,
+            "scoreError" : 37.92631637333487,
+            "scoreConfidence" : [
+                336.26650538413935,
+                412.1191381308091
+            ],
+            "scorePercentiles" : {
+                "0.0" : 366.90424509005146,
+                "50.0" : 374.3291571644156,
+                "90.0" : 381.20872761101424,
+                "95.0" : 381.20872761101424,
+                "99.0" : 381.20872761101424,
+                "99.9" : 381.20872761101424,
+                "99.99" : 381.20872761101424,
+                "99.999" : 381.20872761101424,
+                "99.9999" : 381.20872761101424,
+                "100.0" : 381.20872761101424
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    373.6374441270122,
+                    381.20872761101424
+                ],
+                [
+                    375.020870201819,
+                    366.90424509005146
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.36",
+        "benchmark" : "net.virtualvoid.llama2.Llama2Benchmark.run",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 2,
+        "jvm" : "/home/johannes/opt/graalvm-jdk-17.0.8+9.1/bin/java",
+        "jvmArgs" : [
+            "-server",
+            "-Xms15g",
+            "-Xmx15g",
+            "-XX:NewSize=500m",
+            "-XX:MaxNewSize=500m",
+            "-XX:InitialCodeCacheSize=512m",
+            "-XX:ReservedCodeCacheSize=512m",
+            "-XX:+AlwaysPreTouch"
+        ],
+        "jdkVersion" : "17.0.8",
+        "vmName" : "Java HotSpot(TM) 64-Bit Server VM",
+        "vmVersion" : "17.0.8+9-LTS-jvmci-23.0-b14",
+        "warmupIterations" : 3,
+        "warmupTime" : "3 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 2,
+        "measurementTime" : "3 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "impl" : "native-avx2",
+            "model" : "stories15M.bin",
+            "quantization" : "none",
+            "threads" : "6"
+        },
+        "primaryMetric" : {
+            "score" : 676.8972230005925,
+            "scoreError" : 44.03539730846205,
+            "scoreConfidence" : [
+                632.8618256921304,
+                720.9326203090545
+            ],
+            "scorePercentiles" : {
+                "0.0" : 670.7711210373312,
+                "50.0" : 675.2225438926885,
+                "90.0" : 686.3726831796614,
+                "95.0" : 686.3726831796614,
+                "99.0" : 686.3726831796614,
+                "99.9" : 686.3726831796614,
+                "99.99" : 686.3726831796614,
+                "99.999" : 686.3726831796614,
+                "99.9999" : 686.3726831796614,
+                "100.0" : 686.3726831796614
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    677.0101039962108,
+                    686.3726831796614
+                ],
+                [
+                    670.7711210373312,
+                    673.4349837891662
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.36",
+        "benchmark" : "net.virtualvoid.llama2.Llama2Benchmark.run",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 2,
+        "jvm" : "/home/johannes/opt/graalvm-jdk-17.0.8+9.1/bin/java",
+        "jvmArgs" : [
+            "-server",
+            "-Xms15g",
+            "-Xmx15g",
+            "-XX:NewSize=500m",
+            "-XX:MaxNewSize=500m",
+            "-XX:InitialCodeCacheSize=512m",
+            "-XX:ReservedCodeCacheSize=512m",
+            "-XX:+AlwaysPreTouch"
+        ],
+        "jdkVersion" : "17.0.8",
+        "vmName" : "Java HotSpot(TM) 64-Bit Server VM",
+        "vmVersion" : "17.0.8+9-LTS-jvmci-23.0-b14",
+        "warmupIterations" : 3,
+        "warmupTime" : "3 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 2,
+        "measurementTime" : "3 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "impl" : "native-avx2",
+            "model" : "stories15M.bin",
+            "quantization" : "Q8",
+            "threads" : "1"
+        },
+        "primaryMetric" : {
+            "score" : 532.8307472376046,
+            "scoreError" : 27.290852692532358,
+            "scoreConfidence" : [
+                505.5398945450722,
+                560.1215999301369
+            ],
+            "scorePercentiles" : {
+                "0.0" : 528.7370154085598,
+                "50.0" : 532.357845650093,
+                "90.0" : 537.8702822416723,
+                "95.0" : 537.8702822416723,
+                "99.0" : 537.8702822416723,
+                "99.9" : 537.8702822416723,
+                "99.99" : 537.8702822416723,
+                "99.999" : 537.8702822416723,
+                "99.9999" : 537.8702822416723,
+                "100.0" : 537.8702822416723
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    530.0227116526378,
+                    534.6929796475483
+                ],
+                [
+                    537.8702822416723,
+                    528.7370154085598
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.36",
+        "benchmark" : "net.virtualvoid.llama2.Llama2Benchmark.run",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 2,
+        "jvm" : "/home/johannes/opt/graalvm-jdk-17.0.8+9.1/bin/java",
+        "jvmArgs" : [
+            "-server",
+            "-Xms15g",
+            "-Xmx15g",
+            "-XX:NewSize=500m",
+            "-XX:MaxNewSize=500m",
+            "-XX:InitialCodeCacheSize=512m",
+            "-XX:ReservedCodeCacheSize=512m",
+            "-XX:+AlwaysPreTouch"
+        ],
+        "jdkVersion" : "17.0.8",
+        "vmName" : "Java HotSpot(TM) 64-Bit Server VM",
+        "vmVersion" : "17.0.8+9-LTS-jvmci-23.0-b14",
+        "warmupIterations" : 3,
+        "warmupTime" : "3 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 2,
+        "measurementTime" : "3 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "impl" : "native-avx2",
+            "model" : "stories15M.bin",
+            "quantization" : "Q8",
+            "threads" : "6"
+        },
+        "primaryMetric" : {
+            "score" : 799.5337241248515,
+            "scoreError" : 35.287471944707725,
+            "scoreConfidence" : [
+                764.2462521801438,
+                834.8211960695592
+            ],
+            "scorePercentiles" : {
+                "0.0" : 792.4632100494711,
+                "50.0" : 800.2135580258466,
+                "90.0" : 805.2445703982416,
+                "95.0" : 805.2445703982416,
+                "99.0" : 805.2445703982416,
+                "99.9" : 805.2445703982416,
+                "99.99" : 805.2445703982416,
+                "99.999" : 805.2445703982416,
+                "99.9999" : 805.2445703982416,
+                "100.0" : 805.2445703982416
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    801.9354638548904,
+                    798.491652196803
+                ],
+                [
+                    792.4632100494711,
+                    805.2445703982416
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.36",
+        "benchmark" : "net.virtualvoid.llama2.Llama2Benchmark.run",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 2,
+        "jvm" : "/home/johannes/opt/graalvm-jdk-17.0.8+9.1/bin/java",
+        "jvmArgs" : [
+            "-server",
+            "-Xms15g",
+            "-Xmx15g",
+            "-XX:NewSize=500m",
+            "-XX:MaxNewSize=500m",
+            "-XX:InitialCodeCacheSize=512m",
+            "-XX:ReservedCodeCacheSize=512m",
+            "-XX:+AlwaysPreTouch"
+        ],
+        "jdkVersion" : "17.0.8",
+        "vmName" : "Java HotSpot(TM) 64-Bit Server VM",
+        "vmVersion" : "17.0.8+9-LTS-jvmci-23.0-b14",
+        "warmupIterations" : 3,
+        "warmupTime" : "3 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 2,
+        "measurementTime" : "3 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "impl" : "native-avx2",
+            "model" : "stories15M.bin",
+            "quantization" : "Q4",
+            "threads" : "1"
+        },
+        "primaryMetric" : {
+            "score" : 494.0734685633823,
+            "scoreError" : 51.16815115931119,
+            "scoreConfidence" : [
+                442.90531740407107,
+                545.2416197226935
+            ],
+            "scorePercentiles" : {
+                "0.0" : 486.2697544906209,
+                "50.0" : 492.48753222309233,
+                "90.0" : 505.0490553167235,
+                "95.0" : 505.0490553167235,
+                "99.0" : 505.0490553167235,
+                "99.9" : 505.0490553167235,
+                "99.99" : 505.0490553167235,
+                "99.999" : 505.0490553167235,
+                "99.9999" : 505.0490553167235,
+                "100.0" : 505.0490553167235
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    491.5634352619189,
+                    493.41162918426573
+                ],
+                [
+                    486.2697544906209,
+                    505.0490553167235
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.36",
+        "benchmark" : "net.virtualvoid.llama2.Llama2Benchmark.run",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 2,
+        "jvm" : "/home/johannes/opt/graalvm-jdk-17.0.8+9.1/bin/java",
+        "jvmArgs" : [
+            "-server",
+            "-Xms15g",
+            "-Xmx15g",
+            "-XX:NewSize=500m",
+            "-XX:MaxNewSize=500m",
+            "-XX:InitialCodeCacheSize=512m",
+            "-XX:ReservedCodeCacheSize=512m",
+            "-XX:+AlwaysPreTouch"
+        ],
+        "jdkVersion" : "17.0.8",
+        "vmName" : "Java HotSpot(TM) 64-Bit Server VM",
+        "vmVersion" : "17.0.8+9-LTS-jvmci-23.0-b14",
+        "warmupIterations" : 3,
+        "warmupTime" : "3 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 2,
+        "measurementTime" : "3 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "impl" : "native-avx2",
+            "model" : "stories15M.bin",
+            "quantization" : "Q4",
+            "threads" : "6"
+        },
+        "primaryMetric" : {
+            "score" : 930.4765008208166,
+            "scoreError" : 75.0797440170603,
+            "scoreConfidence" : [
+                855.3967568037563,
+                1005.5562448378769
+            ],
+            "scorePercentiles" : {
+                "0.0" : 918.721233446368,
+                "50.0" : 928.849702280877,
+                "90.0" : 945.485365275144,
+                "95.0" : 945.485365275144,
+                "99.0" : 945.485365275144,
+                "99.9" : 945.485365275144,
+                "99.99" : 945.485365275144,
+                "99.999" : 945.485365275144,
+                "99.9999" : 945.485365275144,
+                "100.0" : 945.485365275144
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    924.5932101155206,
+                    918.721233446368
+                ],
+                [
+                    933.1061944462334,
+                    945.485365275144
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.36",
+        "benchmark" : "net.virtualvoid.llama2.Llama2Benchmark.run",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 2,
+        "jvm" : "/home/johannes/opt/graalvm-jdk-17.0.8+9.1/bin/java",
+        "jvmArgs" : [
+            "-server",
+            "-Xms15g",
+            "-Xmx15g",
+            "-XX:NewSize=500m",
+            "-XX:MaxNewSize=500m",
+            "-XX:InitialCodeCacheSize=512m",
+            "-XX:ReservedCodeCacheSize=512m",
+            "-XX:+AlwaysPreTouch"
+        ],
+        "jdkVersion" : "17.0.8",
+        "vmName" : "Java HotSpot(TM) 64-Bit Server VM",
+        "vmVersion" : "17.0.8+9-LTS-jvmci-23.0-b14",
+        "warmupIterations" : 3,
+        "warmupTime" : "3 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 2,
+        "measurementTime" : "3 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "impl" : "native-avx2",
+            "model" : "stories42M.bin",
+            "quantization" : "none",
+            "threads" : "1"
+        },
+        "primaryMetric" : {
+            "score" : 136.7232524966298,
+            "scoreError" : 14.997317092684122,
+            "scoreConfidence" : [
+                121.72593540394568,
+                151.72056958931393
+            ],
+            "scorePercentiles" : {
+                "0.0" : 133.89778122641744,
+                "50.0" : 136.96105478152262,
+                "90.0" : 139.07311919705654,
+                "95.0" : 139.07311919705654,
+                "99.0" : 139.07311919705654,
+                "99.9" : 139.07311919705654,
+                "99.99" : 139.07311919705654,
+                "99.999" : 139.07311919705654,
+                "99.9999" : 139.07311919705654,
+                "100.0" : 139.07311919705654
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    133.89778122641744,
+                    135.83393617759418
+                ],
+                [
+                    138.08817338545106,
+                    139.07311919705654
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.36",
+        "benchmark" : "net.virtualvoid.llama2.Llama2Benchmark.run",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 2,
+        "jvm" : "/home/johannes/opt/graalvm-jdk-17.0.8+9.1/bin/java",
+        "jvmArgs" : [
+            "-server",
+            "-Xms15g",
+            "-Xmx15g",
+            "-XX:NewSize=500m",
+            "-XX:MaxNewSize=500m",
+            "-XX:InitialCodeCacheSize=512m",
+            "-XX:ReservedCodeCacheSize=512m",
+            "-XX:+AlwaysPreTouch"
+        ],
+        "jdkVersion" : "17.0.8",
+        "vmName" : "Java HotSpot(TM) 64-Bit Server VM",
+        "vmVersion" : "17.0.8+9-LTS-jvmci-23.0-b14",
+        "warmupIterations" : 3,
+        "warmupTime" : "3 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 2,
+        "measurementTime" : "3 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "impl" : "native-avx2",
+            "model" : "stories42M.bin",
+            "quantization" : "none",
+            "threads" : "6"
+        },
+        "primaryMetric" : {
+            "score" : 243.04888718332404,
+            "scoreError" : 13.570194824694827,
+            "scoreConfidence" : [
+                229.47869235862922,
+                256.6190820080189
+            ],
+            "scorePercentiles" : {
+                "0.0" : 239.91260479626655,
+                "50.0" : 243.96452658662847,
+                "90.0" : 244.3538907637727,
+                "95.0" : 244.3538907637727,
+                "99.0" : 244.3538907637727,
+                "99.9" : 244.3538907637727,
+                "99.99" : 244.3538907637727,
+                "99.999" : 244.3538907637727,
+                "99.9999" : 244.3538907637727,
+                "100.0" : 244.3538907637727
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    239.91260479626655,
+                    244.3538907637727
+                ],
+                [
+                    243.8810368953937,
+                    244.04801627786324
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.36",
+        "benchmark" : "net.virtualvoid.llama2.Llama2Benchmark.run",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 2,
+        "jvm" : "/home/johannes/opt/graalvm-jdk-17.0.8+9.1/bin/java",
+        "jvmArgs" : [
+            "-server",
+            "-Xms15g",
+            "-Xmx15g",
+            "-XX:NewSize=500m",
+            "-XX:MaxNewSize=500m",
+            "-XX:InitialCodeCacheSize=512m",
+            "-XX:ReservedCodeCacheSize=512m",
+            "-XX:+AlwaysPreTouch"
+        ],
+        "jdkVersion" : "17.0.8",
+        "vmName" : "Java HotSpot(TM) 64-Bit Server VM",
+        "vmVersion" : "17.0.8+9-LTS-jvmci-23.0-b14",
+        "warmupIterations" : 3,
+        "warmupTime" : "3 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 2,
+        "measurementTime" : "3 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "impl" : "native-avx2",
+            "model" : "stories42M.bin",
+            "quantization" : "Q8",
+            "threads" : "1"
+        },
+        "primaryMetric" : {
+            "score" : 229.4145707257014,
+            "scoreError" : 28.628492998169413,
+            "scoreConfidence" : [
+                200.786077727532,
+                258.04306372387083
+            ],
+            "scorePercentiles" : {
+                "0.0" : 224.91307192238327,
+                "50.0" : 229.2276230435011,
+                "90.0" : 234.28996489342006,
+                "95.0" : 234.28996489342006,
+                "99.0" : 234.28996489342006,
+                "99.9" : 234.28996489342006,
+                "99.99" : 234.28996489342006,
+                "99.999" : 234.28996489342006,
+                "99.9999" : 234.28996489342006,
+                "100.0" : 234.28996489342006
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    226.5092066021082,
+                    234.28996489342006
+                ],
+                [
+                    224.91307192238327,
+                    231.946039484894
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.36",
+        "benchmark" : "net.virtualvoid.llama2.Llama2Benchmark.run",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 2,
+        "jvm" : "/home/johannes/opt/graalvm-jdk-17.0.8+9.1/bin/java",
+        "jvmArgs" : [
+            "-server",
+            "-Xms15g",
+            "-Xmx15g",
+            "-XX:NewSize=500m",
+            "-XX:MaxNewSize=500m",
+            "-XX:InitialCodeCacheSize=512m",
+            "-XX:ReservedCodeCacheSize=512m",
+            "-XX:+AlwaysPreTouch"
+        ],
+        "jdkVersion" : "17.0.8",
+        "vmName" : "Java HotSpot(TM) 64-Bit Server VM",
+        "vmVersion" : "17.0.8+9-LTS-jvmci-23.0-b14",
+        "warmupIterations" : 3,
+        "warmupTime" : "3 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 2,
+        "measurementTime" : "3 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "impl" : "native-avx2",
+            "model" : "stories42M.bin",
+            "quantization" : "Q8",
+            "threads" : "6"
+        },
+        "primaryMetric" : {
+            "score" : 406.70160722793753,
+            "scoreError" : 20.78565577570247,
+            "scoreConfidence" : [
+                385.91595145223505,
+                427.48726300364
+            ],
+            "scorePercentiles" : {
+                "0.0" : 402.18140214386165,
+                "50.0" : 407.5262223502024,
+                "90.0" : 409.57258206748344,
+                "95.0" : 409.57258206748344,
+                "99.0" : 409.57258206748344,
+                "99.9" : 409.57258206748344,
+                "99.99" : 409.57258206748344,
+                "99.999" : 409.57258206748344,
+                "99.9999" : 409.57258206748344,
+                "100.0" : 409.57258206748344
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    402.18140214386165,
+                    409.57258206748344
+                ],
+                [
+                    406.81739286717345,
+                    408.2350518332313
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.36",
+        "benchmark" : "net.virtualvoid.llama2.Llama2Benchmark.run",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 2,
+        "jvm" : "/home/johannes/opt/graalvm-jdk-17.0.8+9.1/bin/java",
+        "jvmArgs" : [
+            "-server",
+            "-Xms15g",
+            "-Xmx15g",
+            "-XX:NewSize=500m",
+            "-XX:MaxNewSize=500m",
+            "-XX:InitialCodeCacheSize=512m",
+            "-XX:ReservedCodeCacheSize=512m",
+            "-XX:+AlwaysPreTouch"
+        ],
+        "jdkVersion" : "17.0.8",
+        "vmName" : "Java HotSpot(TM) 64-Bit Server VM",
+        "vmVersion" : "17.0.8+9-LTS-jvmci-23.0-b14",
+        "warmupIterations" : 3,
+        "warmupTime" : "3 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 2,
+        "measurementTime" : "3 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "impl" : "native-avx2",
+            "model" : "stories42M.bin",
+            "quantization" : "Q4",
+            "threads" : "1"
+        },
+        "primaryMetric" : {
+            "score" : 222.61730148605955,
+            "scoreError" : 10.090338224711983,
+            "scoreConfidence" : [
+                212.52696326134756,
+                232.70763971077153
+            ],
+            "scorePercentiles" : {
+                "0.0" : 220.43870543659568,
+                "50.0" : 223.02514534510453,
+                "90.0" : 223.98020981743346,
+                "95.0" : 223.98020981743346,
+                "99.0" : 223.98020981743346,
+                "99.9" : 223.98020981743346,
+                "99.99" : 223.98020981743346,
+                "99.999" : 223.98020981743346,
+                "99.9999" : 223.98020981743346,
+                "100.0" : 223.98020981743346
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    220.43870543659568,
+                    223.46005305138965
+                ],
+                [
+                    223.98020981743346,
+                    222.59023763881942
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.36",
+        "benchmark" : "net.virtualvoid.llama2.Llama2Benchmark.run",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 2,
+        "jvm" : "/home/johannes/opt/graalvm-jdk-17.0.8+9.1/bin/java",
+        "jvmArgs" : [
+            "-server",
+            "-Xms15g",
+            "-Xmx15g",
+            "-XX:NewSize=500m",
+            "-XX:MaxNewSize=500m",
+            "-XX:InitialCodeCacheSize=512m",
+            "-XX:ReservedCodeCacheSize=512m",
+            "-XX:+AlwaysPreTouch"
+        ],
+        "jdkVersion" : "17.0.8",
+        "vmName" : "Java HotSpot(TM) 64-Bit Server VM",
+        "vmVersion" : "17.0.8+9-LTS-jvmci-23.0-b14",
+        "warmupIterations" : 3,
+        "warmupTime" : "3 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 2,
+        "measurementTime" : "3 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "impl" : "native-avx2",
+            "model" : "stories42M.bin",
+            "quantization" : "Q4",
+            "threads" : "6"
+        },
+        "primaryMetric" : {
+            "score" : 497.0423170488187,
+            "scoreError" : 62.32712200505185,
+            "scoreConfidence" : [
+                434.7151950437668,
+                559.3694390538706
+            ],
+            "scorePercentiles" : {
+                "0.0" : 483.261222382426,
+                "50.0" : 499.60438444166675,
+                "90.0" : 505.6992769295153,
+                "95.0" : 505.6992769295153,
+                "99.0" : 505.6992769295153,
+                "99.9" : 505.6992769295153,
+                "99.99" : 505.6992769295153,
+                "99.999" : 505.6992769295153,
+                "99.9999" : 505.6992769295153,
+                "100.0" : 505.6992769295153
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    483.261222382426,
+                    500.3457453929516
+                ],
+                [
+                    505.6992769295153,
+                    498.8630234903819
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.36",
+        "benchmark" : "net.virtualvoid.llama2.Llama2Benchmark.run",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 2,
+        "jvm" : "/home/johannes/opt/graalvm-jdk-17.0.8+9.1/bin/java",
+        "jvmArgs" : [
+            "-server",
+            "-Xms15g",
+            "-Xmx15g",
+            "-XX:NewSize=500m",
+            "-XX:MaxNewSize=500m",
+            "-XX:InitialCodeCacheSize=512m",
+            "-XX:ReservedCodeCacheSize=512m",
+            "-XX:+AlwaysPreTouch"
+        ],
+        "jdkVersion" : "17.0.8",
+        "vmName" : "Java HotSpot(TM) 64-Bit Server VM",
+        "vmVersion" : "17.0.8+9-LTS-jvmci-23.0-b14",
+        "warmupIterations" : 3,
+        "warmupTime" : "3 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 2,
+        "measurementTime" : "3 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "impl" : "native-avx2",
+            "model" : "stories110M.bin",
+            "quantization" : "none",
+            "threads" : "1"
+        },
+        "primaryMetric" : {
+            "score" : 50.08618428895669,
+            "scoreError" : 0.43451876682482155,
+            "scoreConfidence" : [
+                49.651665522131864,
+                50.52070305578151
+            ],
+            "scorePercentiles" : {
+                "0.0" : 50.01301198212677,
+                "50.0" : 50.086349227539635,
+                "90.0" : 50.159026718620716,
+                "95.0" : 50.159026718620716,
+                "99.0" : 50.159026718620716,
+                "99.9" : 50.159026718620716,
+                "99.99" : 50.159026718620716,
+                "99.999" : 50.159026718620716,
+                "99.9999" : 50.159026718620716,
+                "100.0" : 50.159026718620716
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    50.04824211406833,
+                    50.12445634101094
+                ],
+                [
+                    50.01301198212677,
+                    50.159026718620716
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.36",
+        "benchmark" : "net.virtualvoid.llama2.Llama2Benchmark.run",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 2,
+        "jvm" : "/home/johannes/opt/graalvm-jdk-17.0.8+9.1/bin/java",
+        "jvmArgs" : [
+            "-server",
+            "-Xms15g",
+            "-Xmx15g",
+            "-XX:NewSize=500m",
+            "-XX:MaxNewSize=500m",
+            "-XX:InitialCodeCacheSize=512m",
+            "-XX:ReservedCodeCacheSize=512m",
+            "-XX:+AlwaysPreTouch"
+        ],
+        "jdkVersion" : "17.0.8",
+        "vmName" : "Java HotSpot(TM) 64-Bit Server VM",
+        "vmVersion" : "17.0.8+9-LTS-jvmci-23.0-b14",
+        "warmupIterations" : 3,
+        "warmupTime" : "3 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 2,
+        "measurementTime" : "3 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "impl" : "native-avx2",
+            "model" : "stories110M.bin",
+            "quantization" : "none",
+            "threads" : "6"
+        },
+        "primaryMetric" : {
+            "score" : 85.33802406708884,
+            "scoreError" : 13.905414768163142,
+            "scoreConfidence" : [
+                71.4326092989257,
+                99.24343883525198
+            ],
+            "scorePercentiles" : {
+                "0.0" : 82.5076499079808,
+                "50.0" : 85.86740312715315,
+                "90.0" : 87.10964010606827,
+                "95.0" : 87.10964010606827,
+                "99.0" : 87.10964010606827,
+                "99.9" : 87.10964010606827,
+                "99.99" : 87.10964010606827,
+                "99.999" : 87.10964010606827,
+                "99.9999" : 87.10964010606827,
+                "100.0" : 87.10964010606827
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    86.91182051581112,
+                    87.10964010606827
+                ],
+                [
+                    82.5076499079808,
+                    84.82298573849519
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.36",
+        "benchmark" : "net.virtualvoid.llama2.Llama2Benchmark.run",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 2,
+        "jvm" : "/home/johannes/opt/graalvm-jdk-17.0.8+9.1/bin/java",
+        "jvmArgs" : [
+            "-server",
+            "-Xms15g",
+            "-Xmx15g",
+            "-XX:NewSize=500m",
+            "-XX:MaxNewSize=500m",
+            "-XX:InitialCodeCacheSize=512m",
+            "-XX:ReservedCodeCacheSize=512m",
+            "-XX:+AlwaysPreTouch"
+        ],
+        "jdkVersion" : "17.0.8",
+        "vmName" : "Java HotSpot(TM) 64-Bit Server VM",
+        "vmVersion" : "17.0.8+9-LTS-jvmci-23.0-b14",
+        "warmupIterations" : 3,
+        "warmupTime" : "3 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 2,
+        "measurementTime" : "3 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "impl" : "native-avx2",
+            "model" : "stories110M.bin",
+            "quantization" : "Q8",
+            "threads" : "1"
+        },
+        "primaryMetric" : {
+            "score" : 99.04528665398192,
+            "scoreError" : 6.012288232136343,
+            "scoreConfidence" : [
+                93.03299842184558,
+                105.05757488611826
+            ],
+            "scorePercentiles" : {
+                "0.0" : 97.8583399115368,
+                "50.0" : 99.22828206048305,
+                "90.0" : 99.86624258342475,
+                "95.0" : 99.86624258342475,
+                "99.0" : 99.86624258342475,
+                "99.9" : 99.86624258342475,
+                "99.99" : 99.86624258342475,
+                "99.999" : 99.86624258342475,
+                "99.9999" : 99.86624258342475,
+                "100.0" : 99.86624258342475
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    99.70114183929105,
+                    97.8583399115368
+                ],
+                [
+                    99.86624258342475,
+                    98.75542228167504
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.36",
+        "benchmark" : "net.virtualvoid.llama2.Llama2Benchmark.run",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 2,
+        "jvm" : "/home/johannes/opt/graalvm-jdk-17.0.8+9.1/bin/java",
+        "jvmArgs" : [
+            "-server",
+            "-Xms15g",
+            "-Xmx15g",
+            "-XX:NewSize=500m",
+            "-XX:MaxNewSize=500m",
+            "-XX:InitialCodeCacheSize=512m",
+            "-XX:ReservedCodeCacheSize=512m",
+            "-XX:+AlwaysPreTouch"
+        ],
+        "jdkVersion" : "17.0.8",
+        "vmName" : "Java HotSpot(TM) 64-Bit Server VM",
+        "vmVersion" : "17.0.8+9-LTS-jvmci-23.0-b14",
+        "warmupIterations" : 3,
+        "warmupTime" : "3 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 2,
+        "measurementTime" : "3 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "impl" : "native-avx2",
+            "model" : "stories110M.bin",
+            "quantization" : "Q8",
+            "threads" : "6"
+        },
+        "primaryMetric" : {
+            "score" : 183.15131115942674,
+            "scoreError" : 21.449966674635263,
+            "scoreConfidence" : [
+                161.7013444847915,
+                204.601277834062
+            ],
+            "scorePercentiles" : {
+                "0.0" : 179.71533707629771,
+                "50.0" : 182.78010621357976,
+                "90.0" : 187.32969513424976,
+                "95.0" : 187.32969513424976,
+                "99.0" : 187.32969513424976,
+                "99.9" : 187.32969513424976,
+                "99.99" : 187.32969513424976,
+                "99.999" : 187.32969513424976,
+                "99.9999" : 187.32969513424976,
+                "100.0" : 187.32969513424976
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    179.71533707629771,
+                    181.45440384540996
+                ],
+                [
+                    184.10580858174953,
+                    187.32969513424976
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.36",
+        "benchmark" : "net.virtualvoid.llama2.Llama2Benchmark.run",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 2,
+        "jvm" : "/home/johannes/opt/graalvm-jdk-17.0.8+9.1/bin/java",
+        "jvmArgs" : [
+            "-server",
+            "-Xms15g",
+            "-Xmx15g",
+            "-XX:NewSize=500m",
+            "-XX:MaxNewSize=500m",
+            "-XX:InitialCodeCacheSize=512m",
+            "-XX:ReservedCodeCacheSize=512m",
+            "-XX:+AlwaysPreTouch"
+        ],
+        "jdkVersion" : "17.0.8",
+        "vmName" : "Java HotSpot(TM) 64-Bit Server VM",
+        "vmVersion" : "17.0.8+9-LTS-jvmci-23.0-b14",
+        "warmupIterations" : 3,
+        "warmupTime" : "3 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 2,
+        "measurementTime" : "3 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "impl" : "native-avx2",
+            "model" : "stories110M.bin",
+            "quantization" : "Q4",
+            "threads" : "1"
+        },
+        "primaryMetric" : {
+            "score" : 95.46529393789393,
+            "scoreError" : 9.105271843185065,
+            "scoreConfidence" : [
+                86.36002209470887,
+                104.570565781079
+            ],
+            "scorePercentiles" : {
+                "0.0" : 93.56851991589596,
+                "50.0" : 95.67722316212138,
+                "90.0" : 96.93820951143694,
+                "95.0" : 96.93820951143694,
+                "99.0" : 96.93820951143694,
+                "99.9" : 96.93820951143694,
+                "99.99" : 96.93820951143694,
+                "99.999" : 96.93820951143694,
+                "99.9999" : 96.93820951143694,
+                "100.0" : 96.93820951143694
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    95.89994868671525,
+                    96.93820951143694
+                ],
+                [
+                    95.45449763752751,
+                    93.56851991589596
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.36",
+        "benchmark" : "net.virtualvoid.llama2.Llama2Benchmark.run",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 2,
+        "jvm" : "/home/johannes/opt/graalvm-jdk-17.0.8+9.1/bin/java",
+        "jvmArgs" : [
+            "-server",
+            "-Xms15g",
+            "-Xmx15g",
+            "-XX:NewSize=500m",
+            "-XX:MaxNewSize=500m",
+            "-XX:InitialCodeCacheSize=512m",
+            "-XX:ReservedCodeCacheSize=512m",
+            "-XX:+AlwaysPreTouch"
+        ],
+        "jdkVersion" : "17.0.8",
+        "vmName" : "Java HotSpot(TM) 64-Bit Server VM",
+        "vmVersion" : "17.0.8+9-LTS-jvmci-23.0-b14",
+        "warmupIterations" : 3,
+        "warmupTime" : "3 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 2,
+        "measurementTime" : "3 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "impl" : "native-avx2",
+            "model" : "stories110M.bin",
+            "quantization" : "Q4",
+            "threads" : "6"
+        },
+        "primaryMetric" : {
+            "score" : 239.4847549647735,
+            "scoreError" : 9.425600380015322,
+            "scoreConfidence" : [
+                230.05915458475818,
+                248.9103553447888
+            ],
+            "scorePercentiles" : {
+                "0.0" : 238.17136640402893,
+                "50.0" : 239.09985329487276,
+                "90.0" : 241.5679468653195,
+                "95.0" : 241.5679468653195,
+                "99.0" : 241.5679468653195,
+                "99.9" : 241.5679468653195,
+                "99.99" : 241.5679468653195,
+                "99.999" : 241.5679468653195,
+                "99.9999" : 241.5679468653195,
+                "100.0" : 241.5679468653195
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    239.20415724386675,
+                    238.99554934587877
+                ],
+                [
+                    238.17136640402893,
+                    241.5679468653195
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.36",
+        "benchmark" : "net.virtualvoid.llama2.Llama2Benchmark.run",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 2,
+        "jvm" : "/home/johannes/opt/graalvm-jdk-17.0.8+9.1/bin/java",
+        "jvmArgs" : [
+            "-server",
+            "-Xms15g",
+            "-Xmx15g",
+            "-XX:NewSize=500m",
+            "-XX:MaxNewSize=500m",
+            "-XX:InitialCodeCacheSize=512m",
+            "-XX:ReservedCodeCacheSize=512m",
+            "-XX:+AlwaysPreTouch"
+        ],
+        "jdkVersion" : "17.0.8",
+        "vmName" : "Java HotSpot(TM) 64-Bit Server VM",
+        "vmVersion" : "17.0.8+9-LTS-jvmci-23.0-b14",
+        "warmupIterations" : 3,
+        "warmupTime" : "3 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 2,
+        "measurementTime" : "3 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "impl" : "native-avx2",
+            "model" : "llama2_7b.bin",
+            "quantization" : "Q8",
+            "threads" : "1"
+        },
+        "primaryMetric" : {
+            "score" : 1.9331261301178242,
+            "scoreError" : 0.5040585486331552,
+            "scoreConfidence" : [
+                1.429067581484669,
+                2.437184678750979
+            ],
+            "scorePercentiles" : {
+                "0.0" : 1.8223661843235381,
+                "50.0" : 1.958942954495679,
+                "90.0" : 1.9922524271564004,
+                "95.0" : 1.9922524271564004,
+                "99.0" : 1.9922524271564004,
+                "99.9" : 1.9922524271564004,
+                "99.99" : 1.9922524271564004,
+                "99.999" : 1.9922524271564004,
+                "99.9999" : 1.9922524271564004,
+                "100.0" : 1.9922524271564004
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    1.934891010750009,
+                    1.8223661843235381
+                ],
+                [
+                    1.9829948982413488,
+                    1.9922524271564004
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.36",
+        "benchmark" : "net.virtualvoid.llama2.Llama2Benchmark.run",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 2,
+        "jvm" : "/home/johannes/opt/graalvm-jdk-17.0.8+9.1/bin/java",
+        "jvmArgs" : [
+            "-server",
+            "-Xms15g",
+            "-Xmx15g",
+            "-XX:NewSize=500m",
+            "-XX:MaxNewSize=500m",
+            "-XX:InitialCodeCacheSize=512m",
+            "-XX:ReservedCodeCacheSize=512m",
+            "-XX:+AlwaysPreTouch"
+        ],
+        "jdkVersion" : "17.0.8",
+        "vmName" : "Java HotSpot(TM) 64-Bit Server VM",
+        "vmVersion" : "17.0.8+9-LTS-jvmci-23.0-b14",
+        "warmupIterations" : 3,
+        "warmupTime" : "3 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 2,
+        "measurementTime" : "3 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "impl" : "native-avx2",
+            "model" : "llama2_7b.bin",
+            "quantization" : "Q8",
+            "threads" : "6"
+        },
+        "primaryMetric" : {
+            "score" : 4.461196048063887,
+            "scoreError" : 1.4150428097061751,
+            "scoreConfidence" : [
+                3.046153238357712,
+                5.876238857770062
+            ],
+            "scorePercentiles" : {
+                "0.0" : 4.132976114880777,
+                "50.0" : 4.564642175236875,
+                "90.0" : 4.582523726901023,
+                "95.0" : 4.582523726901023,
+                "99.0" : 4.582523726901023,
+                "99.9" : 4.582523726901023,
+                "99.99" : 4.582523726901023,
+                "99.999" : 4.582523726901023,
+                "99.9999" : 4.582523726901023,
+                "100.0" : 4.582523726901023
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    4.132976114880777,
+                    4.582523726901023
+                ],
+                [
+                    4.563052473080183,
+                    4.566231877393567
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.36",
+        "benchmark" : "net.virtualvoid.llama2.Llama2Benchmark.run",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 2,
+        "jvm" : "/home/johannes/opt/graalvm-jdk-17.0.8+9.1/bin/java",
+        "jvmArgs" : [
+            "-server",
+            "-Xms15g",
+            "-Xmx15g",
+            "-XX:NewSize=500m",
+            "-XX:MaxNewSize=500m",
+            "-XX:InitialCodeCacheSize=512m",
+            "-XX:ReservedCodeCacheSize=512m",
+            "-XX:+AlwaysPreTouch"
+        ],
+        "jdkVersion" : "17.0.8",
+        "vmName" : "Java HotSpot(TM) 64-Bit Server VM",
+        "vmVersion" : "17.0.8+9-LTS-jvmci-23.0-b14",
+        "warmupIterations" : 3,
+        "warmupTime" : "3 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 2,
+        "measurementTime" : "3 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "impl" : "native-avx2",
+            "model" : "llama2_7b.bin",
+            "quantization" : "Q4",
+            "threads" : "1"
+        },
+        "primaryMetric" : {
+            "score" : 2.016883913259195,
+            "scoreError" : 0.12657010669558358,
+            "scoreConfidence" : [
+                1.8903138065636114,
+                2.1434540199547785
+            ],
+            "scorePercentiles" : {
+                "0.0" : 1.987785202257548,
+                "50.0" : 2.024686033736974,
+                "90.0" : 2.0303783833052838,
+                "95.0" : 2.0303783833052838,
+                "99.0" : 2.0303783833052838,
+                "99.9" : 2.0303783833052838,
+                "99.99" : 2.0303783833052838,
+                "99.999" : 2.0303783833052838,
+                "99.9999" : 2.0303783833052838,
+                "100.0" : 2.0303783833052838
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    1.987785202257548,
+                    2.0251066677701637
+                ],
+                [
+                    2.0303783833052838,
+                    2.024265399703784
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.36",
+        "benchmark" : "net.virtualvoid.llama2.Llama2Benchmark.run",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 2,
+        "jvm" : "/home/johannes/opt/graalvm-jdk-17.0.8+9.1/bin/java",
+        "jvmArgs" : [
+            "-server",
+            "-Xms15g",
+            "-Xmx15g",
+            "-XX:NewSize=500m",
+            "-XX:MaxNewSize=500m",
+            "-XX:InitialCodeCacheSize=512m",
+            "-XX:ReservedCodeCacheSize=512m",
+            "-XX:+AlwaysPreTouch"
+        ],
+        "jdkVersion" : "17.0.8",
+        "vmName" : "Java HotSpot(TM) 64-Bit Server VM",
+        "vmVersion" : "17.0.8+9-LTS-jvmci-23.0-b14",
+        "warmupIterations" : 3,
+        "warmupTime" : "3 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 2,
+        "measurementTime" : "3 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "impl" : "native-avx2",
+            "model" : "llama2_7b.bin",
+            "quantization" : "Q4",
+            "threads" : "6"
+        },
+        "primaryMetric" : {
+            "score" : 6.505664340649342,
+            "scoreError" : 1.8151485242981327,
+            "scoreConfidence" : [
+                4.690515816351209,
+                8.320812864947474
+            ],
+            "scorePercentiles" : {
+                "0.0" : 6.19241839458813,
+                "50.0" : 6.48498771883518,
+                "90.0" : 6.8602635303388775,
+                "95.0" : 6.8602635303388775,
+                "99.0" : 6.8602635303388775,
+                "99.9" : 6.8602635303388775,
+                "99.99" : 6.8602635303388775,
+                "99.999" : 6.8602635303388775,
+                "99.9999" : 6.8602635303388775,
+                "100.0" : 6.8602635303388775
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    6.562413312816982,
+                    6.19241839458813
+                ],
+                [
+                    6.407562124853377,
+                    6.8602635303388775
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.36",
+        "benchmark" : "net.virtualvoid.llama2.Llama2Benchmark.run",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 2,
+        "jvm" : "/home/johannes/opt/graalvm-jdk-17.0.8+9.1/bin/java",
+        "jvmArgs" : [
+            "-server",
+            "-Xms15g",
+            "-Xmx15g",
+            "-XX:NewSize=500m",
+            "-XX:MaxNewSize=500m",
+            "-XX:InitialCodeCacheSize=512m",
+            "-XX:ReservedCodeCacheSize=512m",
+            "-XX:+AlwaysPreTouch"
+        ],
+        "jdkVersion" : "17.0.8",
+        "vmName" : "Java HotSpot(TM) 64-Bit Server VM",
+        "vmVersion" : "17.0.8+9-LTS-jvmci-23.0-b14",
+        "warmupIterations" : 3,
+        "warmupTime" : "3 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 2,
+        "measurementTime" : "3 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "impl" : "native-avx2",
+            "model" : "llama-2-7b.ggmlv3.q4_0.bin",
+            "quantization" : "none",
+            "threads" : "1"
+        },
+        "primaryMetric" : {
+            "score" : 1.6583747879546837,
+            "scoreError" : 0.012730621235396455,
+            "scoreConfidence" : [
+                1.6456441667192874,
+                1.67110540919008
+            ],
+            "scorePercentiles" : {
+                "0.0" : 1.6556315073934145,
+                "50.0" : 1.6587819388825968,
+                "90.0" : 1.6603037666601277,
+                "95.0" : 1.6603037666601277,
+                "99.0" : 1.6603037666601277,
+                "99.9" : 1.6603037666601277,
+                "99.99" : 1.6603037666601277,
+                "99.999" : 1.6603037666601277,
+                "99.9999" : 1.6603037666601277,
+                "100.0" : 1.6603037666601277
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    1.6556315073934145,
+                    1.658600930699962
+                ],
+                [
+                    1.6603037666601277,
+                    1.6589629470652316
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.36",
+        "benchmark" : "net.virtualvoid.llama2.Llama2Benchmark.run",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 2,
+        "jvm" : "/home/johannes/opt/graalvm-jdk-17.0.8+9.1/bin/java",
+        "jvmArgs" : [
+            "-server",
+            "-Xms15g",
+            "-Xmx15g",
+            "-XX:NewSize=500m",
+            "-XX:MaxNewSize=500m",
+            "-XX:InitialCodeCacheSize=512m",
+            "-XX:ReservedCodeCacheSize=512m",
+            "-XX:+AlwaysPreTouch"
+        ],
+        "jdkVersion" : "17.0.8",
+        "vmName" : "Java HotSpot(TM) 64-Bit Server VM",
+        "vmVersion" : "17.0.8+9-LTS-jvmci-23.0-b14",
+        "warmupIterations" : 3,
+        "warmupTime" : "3 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 2,
+        "measurementTime" : "3 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "impl" : "native-avx2",
+            "model" : "llama-2-7b.ggmlv3.q4_0.bin",
+            "quantization" : "none",
+            "threads" : "6"
+        },
+        "primaryMetric" : {
+            "score" : 6.712331200243874,
+            "scoreError" : 2.1602473229908603,
+            "scoreConfidence" : [
+                4.552083877253013,
+                8.872578523234735
+            ],
+            "scorePercentiles" : {
+                "0.0" : 6.360938010940358,
+                "50.0" : 6.712435088875388,
+                "90.0" : 7.06351661228436,
+                "95.0" : 7.06351661228436,
+                "99.0" : 7.06351661228436,
+                "99.9" : 7.06351661228436,
+                "99.99" : 7.06351661228436,
+                "99.999" : 7.06351661228436,
+                "99.9999" : 7.06351661228436,
+                "100.0" : 7.06351661228436
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    6.360938010940358,
+                    6.9227472546104
+                ],
+                [
+                    6.502122923140377,
+                    7.06351661228436
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    }
+]
+
+

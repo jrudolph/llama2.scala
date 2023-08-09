@@ -47,6 +47,9 @@ class Llama2Benchmark extends CommonBenchmark {
 
   @Setup
   def setup(): Unit = {
+    if (model == "llama2_7b.bin" && quantization == "none")
+      throw new IllegalArgumentException("llama2_7b.bin is too large to run without quantization")
+
     val baseDir = { // reStart runs with a subdirectory as the working directory
       val firstTry = new File("tokenizer.bin")
       if (firstTry.exists()) firstTry.getParentFile
@@ -60,18 +63,19 @@ class Llama2Benchmark extends CommonBenchmark {
       case "Q8"   => _.quantizeQ8
     }
 
-    val model0 =
-      if (model.contains("ggml"))
-        Llama2Model.fromGgml(f(model))
-      else
-        Llama2Model.fromLlama2CModel(f(model), f("tokenizer.bin"))
-    _model = quantize(model0)
     _impl = impl match {
       case "scala" =>
         if (threads != 1) throw new IllegalArgumentException("Scala implementation does not support parallelism")
         ScalaMathImplementation
       case "native-avx2" => AVX2MathImplementation
     }
+    val model0 =
+      if (model.contains("ggml"))
+        Llama2Model.fromGgml(f(model))
+      else
+        Llama2Model.fromLlama2CModel(f(model), f("tokenizer.bin"))
+    _model = quantize(model0)
+
     MathImplementation.setImplementation(_impl)
     VectMult.setParallelism(threads)
     _transformer = Llama2TensorTransformer.init(_model)
