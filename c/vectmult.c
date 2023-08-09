@@ -17,7 +17,7 @@ static inline float _mm256_reduce_add_ps(__m256 x) {
     return _mm_cvtss_f32(x32);
 }
 
-float vecdot(float *x, float *y, int dim2) {
+float vecdot(float *restrict x, float *restrict y, int dim2) {
     __m256 sum0 = _mm256_setzero_ps();
     __m256 sum1 = _mm256_setzero_ps();
     //__m256 sum2 = _mm256_setzero_ps();
@@ -79,8 +79,6 @@ void matmulQ8(const int8_t *restrict qa, const float *restrict qaf, const int8_t
             int sumb = 0;
             for (int k = 0; k < K; k++) {
                 sumb += a[j * K + k] * qv[j * K + k];
-                //if(i == 0 && j == 0)
-                //    printf("i=%d, j=%d, k=%d, sumb=%d qa=%d qv=%d\n", i, j, k, sumb, i * dim2 + j * K + k, qv[j * K + k]);
             }
 
             sum += ((float)sumb) * af[j] * qvf[j];
@@ -88,7 +86,7 @@ void matmulQ8(const int8_t *restrict qa, const float *restrict qaf, const int8_t
         desta[i] = sum;
     }
 }
-void matmulQ8_avx2(int8_t *qa, float *qaf, int8_t *qv, float *qvf, float *desta, int dim1, int dim2) {
+void matmulQ8_avx2(int8_t *restrict qa, float *restrict qaf, int8_t *restrict qv, float *restrict qvf, float *restrict desta, int dim1, int dim2) {
     int K = 32;
     int numBlocksV = dim2 / K;
     int i;
@@ -160,8 +158,6 @@ void matmulQ4(const int8_t *restrict qa, const float *restrict qaf, const int8_t
                 int8_t v1 = qv[j * K + k + K / 2];
 
                 sumb += (x0 * v0) + (x1 * v1);
-                //if(i == 0 && j == 0)
-                //    printf("i=%d, j=%d, k=%d, sumb=%d qa=%d qv=%d\n", i, j, k, sumb, i * dim2 + j * K + k, qv[j * K + k]);
             }
 
             sum += ((float)sumb) * af[j] * qvf[j];
@@ -205,8 +201,6 @@ void matmulQ4_buffer(const int8_t *restrict buffer, const int8_t *restrict qv, c
     int i;
     #pragma omp parallel for private(i) num_threads(global_parallelism)
     for (i = 0; i < dim1; i++) {
-        //int8_t * a = qa + i * dim2 / 2;
-        //float *af = qaf + i * dim2 / K;
         int blockOff = i * dim2 / K;
 
         float sum = 0.0f;
@@ -218,11 +212,6 @@ void matmulQ4_buffer(const int8_t *restrict buffer, const int8_t *restrict qv, c
             float af = fp16_to_fp32(rawFactor);
             float qf = qvf[j];
 
-            /*if (i == 0 && j == 0) {
-                printf("raw=%d factor=%f\n", *((int16_t*)&rawFactor), af);
-                printf("qa[0]=%d\n", a[0]);
-            }*/
-
             int sumb = 0;
             for (int k = 0; k < K / 2; k++) {
                 int8_t e = a[k];
@@ -233,8 +222,6 @@ void matmulQ4_buffer(const int8_t *restrict buffer, const int8_t *restrict qv, c
                 int8_t v1 = qv[j * K + k + K / 2];
 
                 sumb += (x0 * v0) + (x1 * v1);
-                //if(i == 0 && j == 0)
-                //    printf("i=%d, j=%d, k=%d, sumb=%d qa=%d qv=%d\n", i, j, k, sumb, i * dim2 + j * K + k, qv[j * K + k]);
             }
 
             sum += ((float)sumb) * af * qf;
@@ -298,15 +285,13 @@ void matmulQ4_avx2(const int8_t *restrict qa, const float *restrict qaf, const i
     }
 }
 
-void matmulQ4_avx2_buffer(const void *buffer, const int8_t *restrict qv, const float *restrict qvf, float *restrict desta, const int dim1, const int dim2)
+void matmulQ4_avx2_buffer(const void *restrict buffer, const int8_t *restrict qv, const float *restrict qvf, float *restrict desta, const int dim1, const int dim2)
 {
     int K = 32;
     int numBlocksV = dim2 / K;
     int i;
     #pragma omp parallel for private(i) num_threads(global_parallelism)
     for (i = 0; i < dim1; i++) {
-        //int8_t *a = qa + i * dim2 / 2;
-        //float *af = qaf + i * dim2 / K;
         int blockOff = i * dim2 / K;
 
         // keep block sums vectorized
@@ -319,17 +304,8 @@ void matmulQ4_avx2_buffer(const void *buffer, const int8_t *restrict qv, const f
             float af = fp16_to_fp32(rawFactor);
             float qf = qvf[j];
 
-            //float af = fp16_to_fp32(*((uint16_t*)buffer + (i * dim2 / K + j) * 18));
-            //uint8_t *qa = buffer + (i * dim2 / K + j) * 18 + 2;//qa + (i * dim2 + j * K)/2
-
-            /*if (i == 0 && j == 0) {
-                printf("factor=%f\n", af);
-                printf("qa[0]=%d\n", qa[0]);
-            }*/
-
             __m256 f = _mm256_set1_ps(af * qf);
 
-            //__m256i a = _mm256_loadu_si256(qa + i * dim2 + j * K);
             __m256i a = bytes_from_nibbles_32(qa);
 
             // Now we have a vector with bytes in [ 0 .. 15 ] interval. Offset them into [ -8 .. +7 ] interval.
