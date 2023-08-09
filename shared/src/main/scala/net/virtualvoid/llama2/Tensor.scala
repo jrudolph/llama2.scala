@@ -48,6 +48,8 @@ trait Tensor1DMut extends Tensor1D {
 
   def expMut(): Unit
 
+  def softmaxMut(): Unit
+
   def :=(op: Op1D): Unit
   def :=(orig: Tensor1D): Unit
 
@@ -137,6 +139,17 @@ object Tensor1DMut {
         fs(offset + i) = math.exp(floats(i)).toFloat
         i += 1
       }
+    }
+
+    def softmaxMut(): Unit = {
+      // find max value
+      val max = this.max
+
+      // exp and sum
+      this -= max
+      this.expMut()
+      // normalize
+      this /= this.sum
     }
 
     def :=(op: Op1D): Unit = op.into(this)

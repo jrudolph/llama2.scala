@@ -146,7 +146,7 @@ class Llama2TensorTransformer(
             }
           }
 
-          softmax(att(h).shorten(pos + 1))
+          att(h).shorten(pos + 1).softmaxMut()
           trace1d("softmax att", att.toFloatArray.take(pos + 1))
 
           // weighted sum of the values, store into xb
@@ -237,17 +237,6 @@ class Llama2TensorTransformer(
     logits := wcls `@` x
 
     logits
-  }
-
-  def softmax(x: Tensor1DMut): Unit = {
-    // find max value
-    val max = x.max
-
-    // exp and sum
-    x -= max
-    x.expMut()
-    // normalize
-    x /= x.sum
   }
 
   def rmsnorm(x: Tensor1DMut, weight: Tensor1D): Op1D = { dest =>
