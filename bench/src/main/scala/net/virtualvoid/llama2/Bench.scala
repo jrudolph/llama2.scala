@@ -3,7 +3,6 @@ package net.virtualvoid.llama2
 import java.util.concurrent.TimeUnit
 import org.openjdk.jmh.annotations.*
 import org.openjdk.jmh.infra.Blackhole
-import org.openjdk.jmh.runner.options.OptionsBuilder
 
 import java.io.File
 
@@ -14,8 +13,8 @@ import java.io.File
   value = 3,
   jvmArgs = Array(
     "-server",
-    "-Xms4g",
-    "-Xmx4g",
+    "-Xms15g",
+    "-Xmx15g",
     "-XX:NewSize=500m",
     "-XX:MaxNewSize=500m",
     "-XX:InitialCodeCacheSize=512m",
@@ -30,7 +29,7 @@ object BenchmarkConfig {
 }
 
 class Llama2Benchmark extends CommonBenchmark {
-  @Param(Array("stories15M.bin", "stories42.bin", "llama-2-7b.ggmlv3.q4_0.bin"))
+  @Param(Array("stories15M.bin", "stories42M.bin", "stories110M.bin", "llama2_7b.bin", "llama-2-7b.ggmlv3.q4_0.bin"))
   var model: String = _
 
   @Param(Array("scala", "native-avx2"))
@@ -79,10 +78,10 @@ class Llama2Benchmark extends CommonBenchmark {
   }
 
   @Benchmark
-  @OperationsPerInvocation(20 /*BenchmarkConfig.Steps*/ )
+  @OperationsPerInvocation(5 /*BenchmarkConfig.Steps*/ )
   def run(blackhole: Blackhole): Unit = {
     val runner = Llama2Runner(_transformer, _model)
-    val it: Iterator[String] = runner.iterate(20 /*BenchmarkConfig.Steps*/ )
+    val it: Iterator[String] = runner.iterate(5 /*BenchmarkConfig.Steps*/ )
     val result: String = it.mkString
 
     blackhole.consume(result)
