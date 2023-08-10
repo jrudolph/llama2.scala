@@ -1,5 +1,7 @@
 package net.virtualvoid.llama2
 
+import scala.annotation.tailrec
+
 class Llama2Runner(transformer: Llama2Transformer, model: Llama2Model) {
   import model.vocab
 
@@ -28,7 +30,7 @@ class Llama2Runner(transformer: Llama2Transformer, model: Llama2Model) {
     val tokMap = vocab.tokenScores.zipWithIndex.map { case ((t, s), i) => t -> (i, s) }.toMap
     var toks: Vector[Int] = prompt.map(x => tokMap(x.toString)._1).toVector
 
-    while (true) {
+    @tailrec def mergeTokensStep(toks: Vector[Int]): Vector[Int] = {
       val candidates =
         toks.sliding(2).zipWithIndex.flatMap {
           case (Seq(t1: Int, t2: Int), i: Int) =>
@@ -37,12 +39,13 @@ class Llama2Runner(transformer: Llama2Transformer, model: Llama2Model) {
             id.map { case (newTok, score) => (i, newTok, score) }
         }
 
-      if (candidates.isEmpty) return toks
+      if (candidates.isEmpty) toks
       else {
         val (idx, newTok, _) = candidates.maxBy(_._3)
-        toks = toks.take(idx) ++ Seq(newTok) ++ toks.drop(idx + 2)
+        mergeTokensStep(toks.take(idx) ++ Seq(newTok) ++ toks.drop(idx + 2))
       }
     }
-    throw new IllegalStateException("Should not be reachable")
+
+    mergeTokensStep(toks)
   }
 }
