@@ -10,7 +10,7 @@ object ArgmaxSampler extends Sampler {
   def sample(logits: Tensor1DMut): Int = logits.toFloatArray.zipWithIndex.maxBy(_._1)._2
 }
 
-class TemperatureSampling(temperature: Float, random: Random = new Random) extends Sampler {
+class TemperatureSampling(temperature: Float, topp: Float = 1f, random: Random = new Random, vocab: Vocab) extends Sampler {
   override def sample(logits: Tensor1DMut): Int = {
 
     def sample(tensor1DMut: Tensor1DMut): Int = {
@@ -28,7 +28,18 @@ class TemperatureSampling(temperature: Float, random: Random = new Random) exten
     else {
       logits /= temperature
       logits.softmaxMut()
-      sample(logits)
+
+      if (topp != 1f) {
+        val sorted = logits.toFloatArray.zipWithIndex.sortBy(-_._1).toVector
+        val cumSum = sorted.iterator.scanLeft(0f)(_ + _._1)
+        val idx = cumSum.indexWhere(_ > topp)
+        val interesting = Tensor1DMut(sorted.take(idx).map(_._1).toArray, idx)
+        interesting /= interesting.sum
+        val sid = sample(interesting)
+        val res = sorted(sid)._2
+        res
+      } else
+        sample(logits)
     }
   }
 }
@@ -45,10 +56,24 @@ class Llama2Runner(transformer: Llama2Transformer, model: Llama2Model) {
     def hasNext: Boolean = pos < steps && token != 0
     def next(): String = {
       val logits = transformer.step(token, pos)
+
+      /* interesting to see what possible completions are
+      if (pos == -1) {
+        val myLogits = Tensor1DMut.zero(logits.size)
+        myLogits := Tensor1DMut(logits, logits.size)
+        myLogits.softmaxMut()
+        println()
+        myLogits.toFloatArray.zipWithIndex.sortBy(-_._1).take(10).foreach {
+          case (p, t) =>
+            println(f"${vocab.tokenScores(t)._1}%-20s ${p * 100}%5.2f %%")
+        }
+      }*/
+
       val next =
         if (pos < promptTokens.length) promptTokens(pos)
         else
           sampler.sample(Tensor1DMut(logits, logits.size))
+
       val tok = vocab.tokenScores(next)._1
       val tokenStr = if (token == 1 && tok == " ") tok.drop(1) else tok
       token = next
