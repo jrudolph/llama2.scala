@@ -28,11 +28,14 @@ object Llama2Main extends App {
 
   VectMult.setParallelism(6)
 
+  val sampler = TemperatureSampling(0.9f)
+
   def run(): Unit = {
-    val steps = 20
+    val steps = 30
     val runner = new Llama2Runner(transformer, model)
     val start = System.nanoTime()
-    runner.iterate(steps).foreach { x => print(x); Console.out.flush() }
+    runner.iterate(steps, sampler = sampler).foreach { x => print(x); Console.out.flush() }
+
     println()
     val end = System.nanoTime()
     val lastedNanos = end - start
