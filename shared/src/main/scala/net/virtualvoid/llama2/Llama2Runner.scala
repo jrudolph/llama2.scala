@@ -43,7 +43,7 @@ class TemperatureSampling(temperature: Float, topp: Float = 1f, random: Random =
          * This method tries to avoid full on sorting of the big logits array.
          *
          * The idea is to exploit properties of the distribution array:
-         *  1. we expect that the top-k values are much larger than the rest (i.e. a power-law-like distribution)
+         *  1. we expect that the top-k values are much larger than the rest (i.e. an inverse power-law distribution)
          *  2. values need to add up to 1
          *
          * 1. means that the top-p entries are few, so scanning is reasonable compared to sorting
@@ -51,24 +51,27 @@ class TemperatureSampling(temperature: Float, topp: Float = 1f, random: Random =
          */
         def selectByScanning(): Int = {
           // FIXME: needs work if there are multiple values of prevMax
-          def maxLessThan(ls: Array[Float], remaining: Float, prevMax: Float): Int = {
-            //println(f"prevMax: $prevMax remaining: $remaining")
+          val vs = logits.toFloatArray
+          // values smaller than (1 - topp) / (logits.length - 1) cannot be part of the result, so sort them out directly
+          val cutoff = (1f - topp) / (logits.length - 1)
+          val idxs = vs.zipWithIndex.filter(_._1 >= cutoff).map(_._2)
+
+          def maxLessThan(remaining: Float, prevMax: Float): Int = {
             val halfRemaining = remaining / 2
-            var maxIndex = 0
-            var max = ls(0)
-            var i = 1
-            while (i < ls.length && max < halfRemaining) {
-              val v = ls(i)
+            var maxIndex = idxs(0)
+            var max = vs(maxIndex)
+            var i = 0
+            while (i < idxs.length && max < halfRemaining) {
+              val idx = idxs(i)
+              val v = vs(idx)
               if (v > max && v < prevMax) {
                 max = v
-                maxIndex = i
+                maxIndex = idx
               }
               i += 1
             }
             maxIndex
           }
-
-          val ls = logits.toFloatArray
 
           val scanAttempts = 100
           val idxBuffer = new Array[Int](scanAttempts)
@@ -78,10 +81,11 @@ class TemperatureSampling(temperature: Float, topp: Float = 1f, random: Random =
             if (sum > topp) numFound
             else if (numFound >= idxBuffer.size) -1
             else {
-              val maxIdx = maxLessThan(ls, 1f - sum, prevMax)
+              val maxIdx = maxLessThan(1f - sum, prevMax)
+              val v = vs(maxIdx)
               idxBuffer(numFound) = maxIdx
-              pBuffer(numFound) = ls(maxIdx)
-              collect(numFound + 1, sum + ls(maxIdx), ls(maxIdx))
+              pBuffer(numFound) = v
+              collect(numFound + 1, sum + v, v)
             }
 
           val numFound = collect(0, 0f, 2f)
