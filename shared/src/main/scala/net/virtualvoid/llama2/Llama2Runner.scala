@@ -30,14 +30,70 @@ class TemperatureSampling(temperature: Float, topp: Float = 1f, random: Random =
       logits.softmaxMut()
 
       if (topp != 1f) {
-        val sorted = logits.toFloatArray.zipWithIndex.sortBy(-_._1).toVector
-        val cumSum = sorted.iterator.scanLeft(0f)(_ + _._1)
-        val idx = cumSum.indexWhere(_ > topp)
-        val interesting = Tensor1DMut(sorted.take(idx).map(_._1).toArray, idx)
-        interesting /= interesting.sum
-        val sid = sample(interesting)
-        val res = sorted(sid)._2
-        res
+        def selectBySorting(): Int = {
+          val sorted = logits.toFloatArray.zipWithIndex.sortBy(-_._1).toVector
+          val cumSum = sorted.iterator.scanLeft(0f)(_ + _._1)
+          val idx = cumSum.indexWhere(_ > topp)
+          val interesting = Tensor1DMut(sorted.take(idx).map(_._1).toArray, idx)
+          interesting /= interesting.sum
+          sorted(sample(interesting))._2
+        }
+
+        /**
+         * This method tries to avoid full on sorting of the big logits array.
+         *
+         * The idea is to exploit properties of the distribution array:
+         *  1. we expect that the top-k values are much larger than the rest (i.e. a power-law-like distribution)
+         *  2. values need to add up to 1
+         *
+         * 1. means that the top-p entries are few, so scanning is reasonable compared to sorting
+         * 2. each scan can be aborted early if we found a value that accounts for more than half of the remaining probability
+         */
+        def selectByScanning(): Int = {
+          // FIXME: needs work if there are multiple values of prevMax
+          def maxLessThan(ls: Array[Float], remaining: Float, prevMax: Float): Int = {
+            //println(f"prevMax: $prevMax remaining: $remaining")
+            val halfRemaining = remaining / 2
+            var maxIndex = 0
+            var max = ls(0)
+            var i = 1
+            while (i < ls.length && max < halfRemaining) {
+              val v = ls(i)
+              if (v > max && v < prevMax) {
+                max = v
+                maxIndex = i
+              }
+              i += 1
+            }
+            maxIndex
+          }
+
+          val ls = logits.toFloatArray
+
+          val scanAttempts = 100
+          val idxBuffer = new Array[Int](scanAttempts)
+          val pBuffer = new Array[Float](scanAttempts)
+
+          def collect(numFound: Int, sum: Float, prevMax: Float): Int =
+            if (sum > topp) numFound
+            else if (numFound >= idxBuffer.size) -1
+            else {
+              val maxIdx = maxLessThan(ls, 1f - sum, prevMax)
+              idxBuffer(numFound) = maxIdx
+              pBuffer(numFound) = ls(maxIdx)
+              collect(numFound + 1, sum + ls(maxIdx), ls(maxIdx))
+            }
+
+          val numFound = collect(0, 0f, 2f)
+          if (numFound == -1) selectBySorting()
+          else {
+            val interesting = Tensor1DMut(pBuffer.take(numFound), numFound)
+            interesting /= interesting.sum
+            val sid = sample(interesting)
+            idxBuffer(sid)
+          }
+        }
+        selectByScanning()
       } else
         sample(logits)
     }
