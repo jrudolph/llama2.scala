@@ -62,7 +62,7 @@ object GgmlLoader {
       f.read(nameBytes)
       val name = new String(nameBytes)
 
-      //println(s"startOfBlock: $startOfBlock nDims: $nDims nameLen: $nameLen tpe: $tpe dims: $dims name: ${new String(nameBytes)}")
+      //println(f"name: $name%-40s startOfBlock: $startOfBlock nDims: $nDims nameLen: $nameLen tpe: $tpe dims: $dims")
 
       //println(s"Now at ${f.getFilePointer}")
       val padding = -(f.getFilePointer) & 31
@@ -203,6 +203,9 @@ object GgmlLoader {
 
       def apply(i: Int): Tensor2D = layers(i)
 
+      def quantizeQ4: Tensor3D = throw new IllegalArgumentException("Model can not be requantized to Q4_0")
+      def quantizeQ8: Tensor3D = throw new IllegalArgumentException("Model can not be requantized to Q8_0")
+
       def toFloatArray: Array[Float] = ???
       def toFloatBuffer: FloatBuffer = ???
     }
@@ -229,6 +232,9 @@ object GgmlLoader {
         val freq_cis_real: Tensor2D = fullWeights.freq_cis_real
         val freq_cis_imag: Tensor2D = fullWeights.freq_cis_imag
         val wcls: Tensor2D = d2("output.weight")
+
+        def quantizeQ4: Weights = throw new IllegalArgumentException("Not supported")
+        def quantizeQ8: Weights = throw new IllegalArgumentException("Not supported")
       }
 
     (config, vocab, res)

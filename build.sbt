@@ -28,6 +28,13 @@ lazy val llama2 =
       }
     )
 
+lazy val bench = project.in(file("bench"))
+  .dependsOn(llama2.jvm)
+  .enablePlugins(JmhPlugin)
+  .settings(
+    scalaVersion := scalaV
+  )
+
 // docs
 
 enablePlugins(ParadoxMaterialThemePlugin)
