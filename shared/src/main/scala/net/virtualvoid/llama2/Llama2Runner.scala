@@ -10,7 +10,7 @@ object ArgmaxSampler extends Sampler {
   def sample(logits: Tensor1DMut): Int = logits.toFloatArray.zipWithIndex.maxBy(_._1)._2
 }
 
-class TemperatureSampling(temperature: Float, topp: Float = 1f, random: Random = new Random, vocab: Vocab) extends Sampler {
+class TemperatureSampling(temperature: Float, topp: Float = 1f, random: Random = new Random) extends Sampler {
   override def sample(logits: Tensor1DMut): Int = {
 
     def sample(tensor1DMut: Tensor1DMut): Int = {
