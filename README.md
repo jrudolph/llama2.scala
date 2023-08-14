@@ -41,49 +41,49 @@ Implementations:
 
 | Model                      | Quantization | Implementation              | Threads | tok / s |
 |----------------------------|--------------|-----------------------------|---------|---------|
-| stories15M.bin             | Q4           | native-avx2                 | 1       | 494.073 |
-| stories15M.bin             | Q4           | native-avx2                 | 6       | 930.477 |
-| stories15M.bin             | Q4           | Scala                       | 1       | 65.214  |
-| stories15M.bin             | Q8           | native-avx2                 | 1       | 532.831 |
-| stories15M.bin             | Q8           | native-avx2                 | 6       | 799.534 |
-| stories15M.bin             | Q8           | Scala                       | 1       | 56.559  |
-| stories15M.bin             | none         | native-avx2                 | 1       | 374.193 |
-| stories15M.bin             | none         | native-avx2                 | 6       | 676.897 |
-| stories15M.bin             | none         | Scala                       | 1       | 65.773  |
+| stories15M.bin             | Q4           | native-avx2                 | 1       | 494     |
+| stories15M.bin             | Q4           | native-avx2                 | 6       | 931     |
+| stories15M.bin             | Q4           | Scala                       | 1       | 65      |
+| stories15M.bin             | Q8           | native-avx2                 | 1       | 533     |
+| stories15M.bin             | Q8           | native-avx2                 | 6       | 800     |
+| stories15M.bin             | Q8           | Scala                       | 1       | 57      |
+| stories15M.bin             | none         | native-avx2                 | 1       | 374     |
+| stories15M.bin             | none         | native-avx2                 | 6       | 677     |
+| stories15M.bin             | none         | Scala                       | 1       | 66      |
 | stories15M.bin             | none         | scala-native vanilla        | 1       | 14      |
 | stories15M.bin             | none         | scala-native (native mmaps) | 1       | 50      |
-| stories42M.bin             | Q4           | native-avx2                 | 1       | 222.617 |
-| stories42M.bin             | Q4           | native-avx2                 | 6       | 497.042 |
-| stories42M.bin             | Q4           | Scala                       | 1       | 24.478  |
-| stories42M.bin             | Q8           | native-avx2                 | 1       | 229.415 |
-| stories42M.bin             | Q8           | native-avx2                 | 6       | 406.702 |
-| stories42M.bin             | Q8           | Scala                       | 1       | 21.701  |
-| stories42M.bin             | none         | native-avx2                 | 1       | 136.723 |
-| stories42M.bin             | none         | native-avx2                 | 6       | 243.049 |
-| stories42M.bin             | none         | Scala                       | 1       | 23.536  |
-| stories42M.bin             | none         | llama2.c / run              | 1       | 21.2    |
-| stories42M.bin             | none         | llama2.c / runfast          | 1       | 68.8    |
+| stories42M.bin             | Q4           | native-avx2                 | 1       | 223     |
+| stories42M.bin             | Q4           | native-avx2                 | 6       | 497     |
+| stories42M.bin             | Q4           | Scala                       | 1       | 24      |
+| stories42M.bin             | Q8           | native-avx2                 | 1       | 229     |
+| stories42M.bin             | Q8           | native-avx2                 | 6       | 407     |
+| stories42M.bin             | Q8           | Scala                       | 1       | 22      |
+| stories42M.bin             | none         | native-avx2                 | 1       | 137     |
+| stories42M.bin             | none         | native-avx2                 | 6       | 243     |
+| stories42M.bin             | none         | Scala                       | 1       | 24      |
+| stories42M.bin             | none         | llama2.c / run              | 1       | 21      |
+| stories42M.bin             | none         | llama2.c / runfast          | 1       | 69      |
 | stories42M.bin             | none         | llama2.c / runomp           | 1       | 98      |
 | stories42M.bin             | none         | llama2.c / runomp           | 6       | 195     |
-| stories110M.bin            | Q4           | native-avx2                 | 1       | 95.465  |
-| stories110M.bin            | Q4           | native-avx2                 | 6       | 239.485 |
-| stories110M.bin            | Q4           | Scala                       | 1       | 9.650   |
-| stories110M.bin            | Q8           | native-avx2                 | 1       | 99.045  |
-| stories110M.bin            | Q8           | native-avx2                 | 6       | 183.151 |
-| stories110M.bin            | Q8           | Scala                       | 1       | 8.405   |
-| stories110M.bin            | none         | native-avx2                 | 1       | 50.086  |
-| stories110M.bin            | none         | native-avx2                 | 6       | 85.338  |
-| stories110M.bin            | none         | Scala                       | 1       | 8.890   |
+| stories110M.bin            | Q4           | native-avx2                 | 1       | 95      |
+| stories110M.bin            | Q4           | native-avx2                 | 6       | 239     |
+| stories110M.bin            | Q4           | Scala                       | 1       | 9.6     |
+| stories110M.bin            | Q8           | native-avx2                 | 1       | 99      |
+| stories110M.bin            | Q8           | native-avx2                 | 6       | 183     |
+| stories110M.bin            | Q8           | Scala                       | 1       | 8.4     |
+| stories110M.bin            | none         | native-avx2                 | 1       | 50      |
+| stories110M.bin            | none         | native-avx2                 | 6       | 85      |
+| stories110M.bin            | none         | Scala                       | 1       | 8.9     |
 | stories110M.bin            | none         | llama2.c / runomp           | 6       | 77      |
-| llama2_7b.bin              | Q4           | native-avx2                 | 1       | 2.017   |
-| llama2_7b.bin              | Q4           | native-avx2                 | 6       | 6.506   |
-| llama2_7b.bin              | Q4           | Scala                       | 1       | 0.163   |
-| llama2_7b.bin              | Q8           | native-avx2                 | 1       | 1.933   |
-| llama2_7b.bin              | Q8           | native-avx2                 | 6       | 4.461   |
-| llama2_7b.bin              | Q8           | Scala                       | 1       | 0.142   |
-| llama-2-7b.ggmlv3.q4_0.bin | as provided  | native-avx2                 | 1       | 1.658   |
-| llama-2-7b.ggmlv3.q4_0.bin | as provided  | native-avx2                 | 6       | 6.712   |
-| llama-2-7b.ggmlv3.q4_0.bin | as provided  | Scala                       | 1       | 0.129   |
+| llama2_7b.bin              | Q4           | native-avx2                 | 1       | 2.0     |
+| llama2_7b.bin              | Q4           | native-avx2                 | 6       | 6.5     |
+| llama2_7b.bin              | Q4           | Scala                       | 1       | 0.16    |
+| llama2_7b.bin              | Q8           | native-avx2                 | 1       | 1.9     |
+| llama2_7b.bin              | Q8           | native-avx2                 | 6       | 4.46    |
+| llama2_7b.bin              | Q8           | Scala                       | 1       | 0.14    |
+| llama-2-7b.ggmlv3.q4_0.bin | as provided  | native-avx2                 | 1       | 1.66    |
+| llama-2-7b.ggmlv3.q4_0.bin | as provided  | native-avx2                 | 6       | 6.71    |
+| llama-2-7b.ggmlv3.q4_0.bin | as provided  | Scala                       | 1       | 0.13    |
 | llama-2-7b.ggmlv3.q4_0.bin | as provided  | llama.cpp                   | 1       | 2.0     |
 | llama-2-7b.ggmlv3.q4_0.bin | as provided  | llama.cpp                   | 6       | 8.1     |
 
