@@ -8,6 +8,7 @@ import java.util
 import java.util.concurrent.TimeUnit
 import java.util.zip.GZIPInputStream
 import scala.io.Source
+import scala.util.Random
 
 @State(Scope.Thread)
 @Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
@@ -27,7 +28,7 @@ import scala.io.Source
 @OutputTimeUnit(TimeUnit.SECONDS)
 class TopPBenchmark {
 
-  @Param(Array("filterAndScan", "filterAndFastSort", "filterAndSort", "sorting"))
+  @Param(Array("quick-select-top-p", "quick-find-max-top-p", "filterAndScan", "filterAndFastSort", "filterAndSort", "sorting"))
   var method: String = _
 
   private var impl: TopPSampling = _
@@ -38,10 +39,12 @@ class TopPBenchmark {
   @Setup
   def setup(): Unit = {
     impl = method match {
-      case "sorting"           => NaiveSortingTopP
-      case "filterAndSort"     => FilterAndSort
-      case "filterAndFastSort" => FilterAndFastSort
-      case "filterAndScan"     => FilterAndScan
+      case "sorting"              => NaiveSortingTopP
+      case "filterAndSort"        => FilterAndSort
+      case "filterAndFastSort"    => FilterAndFastSort
+      case "filterAndScan"        => FilterAndScan
+      case "quick-find-max-top-p" => QuickFindMaxTopP
+      case "quick-select-top-p"   => QuickSelectTopP
     }
 
     data =
@@ -64,7 +67,7 @@ class TopPBenchmark {
             case (idx, i) =>
               println(f"  $i%5d $idx%5d ${d(idx)}%12.9f")
           }
-          throw new IllegalStateException
+          throw new IllegalStateException("Result differed, see above")
         }
     }
   }
@@ -191,74 +194,193 @@ object HistogramSearch extends TopPSampling {
     //       a good guess for the separating element in a single pass and only have to figure out the details out
     //       of a small set considering only the bin at the separating edge.
 
-
     ???
   }
 }
 
-object QuickTopP extends TopPSampling {
+object QuickFindMaxTopP extends TopPSampling {
   def indices(vs: Array[Float], p: Float): Array[Int] = {
     //strategy:
     // * in each iteration, simultaneously
     //   * find the largest value and move it to the front
-    //   * filter out all values that cannot be part of the result and move them back
+    //   * filter in all values that still can be part of the result and move them to front
     // after each iteration the working array:
     //   - contains the i largest values sorted in the beginning
-    //   - then a number of values that still need to be regarding for the result
+    //   - then a number of values that still need to be regarded for the result
     //   - the tail end, does not have to be stored, but rather the last index we are still interested in
 
-    // values smaller than (1 - topp) / (logits.length - 1) cannot be part of the result, so sort them out directly
-    val cutoff = (1f - p) / (vs.length - 1)
-
-    val idxs = new Array[Int](vs.length)
+    val idxs = vs.indices.toArray
     var selected = 0
+    var numInteresting = vs.length
+    // running sum of selected elements
+    var cdf = 0f
+    // running sum of deselected elements
+    var removed = 0f
 
-    {
-      var i = 0
-      while (i < idxs.length) {
-        val v = vs(i)
-        if (v >= cutoff) {
-          idxs(selected) = i
-          selected += 1
-        }
-        i += 1
-      }
-    }
+    while (cdf < p) {
+      var max = 0f
+      var maxIdx = -1
+      val remaining = 1f - cdf - removed // remaining probability mass
+      val halfRemaining = remaining / 2f
+      val cutoff = (1f - p - removed) / (numInteresting - selected - 1)
 
-    def maxLessThan(remaining: Float, prevMax: Float, prevIndex: Int): Int = {
-      val halfRemaining = remaining / 2
-      var maxIndex = -1
-      var max = -1f
-      var i = 0
-      while (i < selected && max < halfRemaining) {
-        val idx = idxs(i)
-        val v = vs(idx)
-        if (v > max && ((v < prevMax) || (v == prevMax && idx > prevIndex))) {
+      var i = selected
+      while (i < numInteresting && max < halfRemaining) {
+        val v = vs(idxs(i))
+        if (v > max) {
           max = v
-          maxIndex = idx
-        }
-        i += 1
+          maxIdx = i
+
+          i += 1
+        } else if (v < cutoff) {
+          numInteresting -= 1
+          val tmp = idxs(i)
+          idxs(i) = idxs(numInteresting)
+          idxs(numInteresting) = tmp
+          removed += v
+
+          // don't increase i
+        } else
+          i += 1
       }
-      maxIndex
+
+      // swap max with selected
+      val tmp = idxs(selected)
+      idxs(selected) = idxs(maxIdx)
+      idxs(maxIdx) = tmp
+      selected += 1
+      cdf += max
+
     }
 
-    val scanAttempts = 1000
-    val idxBuffer = new Array[Int](scanAttempts)
-    val pBuffer = new Array[Float](scanAttempts)
+    idxs.take(selected)
+  }
+}
 
-    def collect(numFound: Int, sum: Float, prevMax: Float, prevIndex: Int): Int =
-      if (sum > p) numFound
-      else if (numFound >= idxBuffer.size) throw new IllegalStateException(s"After $numFound iterations sum is $sum")
-      else {
-        val maxIdx = maxLessThan(1f - sum, prevMax, prevIndex)
-        val v = vs(maxIdx)
-        idxBuffer(numFound) = maxIdx
-        pBuffer(numFound) = v
-        collect(numFound + 1, sum + v, v, maxIdx)
+object QuickSelectTopP extends TopPSampling {
+  def indices(vs: Array[Float], p: Float): Array[Int] = {
+    //strategy:
+    // a refinement of QuickFindMaxTopP that avoids sorting
+    // * in each iteration
+    //  * choose pivot
+    //  * select remaining values in three groups:
+    //   - greater than pivot
+    //   - smaller than cutoff
+    //   - smaller than pivot
+
+    val idxs = vs.indices.toArray
+    var selected = 0
+    var numInteresting = vs.length
+    // running sum of selected elements
+    var cdf = 0f
+    // running sum of deselected elements
+    var removed = 0f
+
+    var count = 0
+    val r = new Random(0)
+
+    def println(str: String): Unit = ()
+
+    while (cdf < p) {
+      val remaining = 1f - cdf - removed // remaining probability mass
+      //val halfRemaining = remaining / 2f
+      val cutoff = (1f - p - removed) / (numInteresting - selected - 1)
+
+      //(1 - cdf - removed) * 0.1f // middle of remaining probability mass
+
+      var left = selected
+      var leftSum = 0f
+      var rightSum = 0f
+      var right = numInteresting - 1
+
+      val pivotIdx = left + r.nextInt().abs % (right - left + 1) //(left + right) / 2
+      val pivotV = vs(idxs(pivotIdx))
+
+      import Console.{ println => _, _ }
+      val nums = idxs.map(vs).map(_ formatted "%8.6f").take(5)
+      println(s"$GREEN${nums.take(selected).mkString(", ")}$RESET | $YELLOW${nums.take(numInteresting).drop(left).mkString(", ")}$RESET | $RED${nums.drop(numInteresting).mkString(", ")}$RESET")
+
+      println(f"selected: $selected%5d cdf: $cdf%12.9f removed: $removed%12.9f numInteresting: $numInteresting%5d cutoff: $cutoff%12.9f pivotV: $pivotV%12.9f")
+
+      while (left < right) {
+        while ( /*left < right &&*/ vs(idxs(left)) >= pivotV) {
+          println(f"left: $left%5d v: ${vs(idxs(left))}%12.9f >= $pivotV%12.9f")
+          leftSum += vs(idxs(left))
+          left += 1
+        }
+        while ( /*left < right &&*/ vs(idxs(right)) < pivotV) {
+          println(f"right: $right%5d v: ${vs(idxs(right))}%12.9f < $pivotV%12.9f")
+          rightSum += vs(idxs(right))
+          right -= 1
+        }
+
+        if (left < right) {
+          println(f"swapping $left%5d ${vs(idxs(left))}%12.9f and $right%5d ${vs(idxs(right))}%12.9f")
+          val tmp = idxs(left)
+          idxs(left) = idxs(right)
+          idxs(right) = tmp
+
+          leftSum += vs(idxs(left))
+          rightSum += vs(idxs(right))
+
+          left += 1
+          right -= 1
+        }
+      }
+      leftSum += vs(idxs(left))
+      if (cdf + leftSum < p) {
+        // all elements in left are selected, great, we did a bunch of work
+        cdf += leftSum
+        selected = left
+      } else {
+        // great we can discard all elements in right and go on with the rest on the left
+        numInteresting = right + 1 // TODO: off by one?
+        removed += rightSum
+      }
+      println(f"left: $left%5d leftSum: $leftSum%12.9f right: $right%5d rightSum: $rightSum%12.9f")
+      if (numInteresting - selected == 1) {
+        cdf += vs(idxs(selected))
+        selected += 1
       }
 
-    val numFound = collect(0, 0f, 2f, -1)
-    if (numFound == -1) throw new IllegalStateException("Too many values")
-    else idxBuffer.take(numFound)
+      count += 1
+      if (count == 40) ???
+      //}
+
+      /*while (cdf < p) {
+      var max = 0f
+      var maxIdx = -1
+
+
+      var i = selected
+      while (i < numInteresting && max < halfRemaining) {
+        val v = vs(idxs(i))
+        if (v > max) {
+          max = v
+          maxIdx = i
+
+          i += 1
+        } else if (v < cutoff) {
+          numInteresting -= 1
+          val tmp = idxs(i)
+          idxs(i) = idxs(numInteresting)
+          idxs(numInteresting) = tmp
+          removed += v
+
+          // don't increase i
+        } else
+          i += 1
+      }
+
+      // swap max with selected
+      val tmp = idxs(selected)
+      idxs(selected) = idxs(maxIdx)
+      idxs(maxIdx) = tmp
+      selected += 1
+      cdf += max*/
+
+    }
+
+    idxs.take(selected)
   }
 }
