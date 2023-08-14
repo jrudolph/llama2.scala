@@ -88,8 +88,14 @@ Implementations:
 | llama-2-7b.ggmlv3.q4_0.bin | as provided  | llama.cpp                   | 6       | 8.1     |
 
 
-
 Notes:
+ * Approximate speedups are:
+   * pure Scala -> AVX2: > 10x
+   * FP32 -> Q8/Q4 (in Scala): same speed
+   * FP32 -> Q8 (AVX2): ~ 2x
+   * Q8 -> Q4 (AVX2) on one thread: same speed
+   * Q4 1 thread -> 6 threads on small models: ~ 2x
+   * Q4 1 thread -> 6 threads on large models: ~ 3x
  * The pure Scala mode GraalVM JDK 17 is only competitive with a llama2.c version compiled with `-O3`.
    Using `-Ofast` on C already makes a huge difference. Would be interesting to see the exact differences
    between JIT compiled code and gcc output with `-Ofast`. Not sure if something like `-Ofast` (using less strict
@@ -103,6 +109,10 @@ Notes:
    sharply after using more than 6 (of 8) threads.
  * Multithreading is interesting, as the task units are quite small (one matrix multiplication) and overheads can be
    significant.
+ * Quantization only helps with SIMD optimization. Only SIMD will give access to byte-wise (int8) operations and
+   *decreasing* the data type size will *increase* the number of lanes per vector with the same factor. It is unclear
+   why going from 32-bit to 8-bit gives only a 2x speedup while being able to run 4x more operations in parallel. One
+   explanation could be that you need more instructions because of the added complexity of quantization.
 
 ## License
 
