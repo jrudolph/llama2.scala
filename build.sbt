@@ -32,7 +32,8 @@ lazy val bench = project.in(file("bench"))
   .dependsOn(llama2.jvm)
   .enablePlugins(JmhPlugin)
   .settings(
-    scalaVersion := scalaV
+    scalaVersion := scalaV,
+    libraryDependencies += "io.spray" %% "spray-json" % "1.3.6"
   )
 
 // docs
