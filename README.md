@@ -5,10 +5,8 @@ to run inference of models with a [Llama](https://arxiv.org/pdf/2302.13971.pdf)-
 
 The code expects [`tokenizer.bin`](https://github.com/karpathy/llama2.c/raw/master/tokenizer.bin) and [`stories15M.bin`](https://huggingface.co/karpathy/tinyllamas/resolve/main/stories15M.bin) in the current directory.
 
-So far, there's nothing original to see here, just a port of the original code. I'm planning to do some experiments,
-to raise the abstraction layer to a more reasonable level (e.g. remove all of the while-loops) but I wanted to start
-with an almost verbatim port to get some intial performance numbers to see if it even makes sense to continue on the
-JVM.
+This started as a port of the original code in pure Scala. Later, more high-level abstractions were
+added and low-level C kernels with AVX2 intrinsics to speed up matrix multiplication.
 
 [![asciicast](https://asciinema.org/a/h7dJq7SOkmlCHmgI3DLRQBp58.svg)](https://asciinema.org/a/h7dJq7SOkmlCHmgI3DLRQBp58)
 
