@@ -39,6 +39,33 @@ Implementations:
  * llama.cpp = as of [d783f798](https://github.com/ggerganov/llama.cpp/tree/d783f7982e0e823a2626a9956359c0d36c1a7e21)
  * scala-native = Using scala-native 0.4.14 with the `Llama2SimpleTransformer` implementation
 
+Notes:
+* Approximate speedups are:
+    * pure Scala -> AVX2: > 10x
+    * FP32 -> Q8/Q4 (in Scala): same speed
+    * FP32 -> Q8 (AVX2): ~ 2x
+    * Q8 -> Q4 (AVX2) on one thread: same speed
+    * Q4 1 thread -> 6 threads on small models: ~ 2x
+    * Q4 1 thread -> 6 threads on large models: ~ 3x
+* The pure Scala mode GraalVM JDK 17 is only competitive with a llama2.c version compiled with `-O3`.
+  Using `-Ofast` on C already makes a huge difference. Would be interesting to see the exact differences
+  between JIT compiled code and gcc output with `-Ofast`. Not sure if something like `-Ofast` (using less strict
+  FP math) is possible on the JVM.
+* Using (i.e. mostly adapting from llama.cpp) kernels in C with SIMD intrinsics and calling them with JNI
+  from Scala makes a huge difference. It is easy to do locally, but, of course, much harder to do in a
+  portable way.
+* As expected, quantization gives another boost. Interesting that it is more pronounced when multi-threading
+  is enabled.
+* OMP-based multithreading is simple to use from C and helps a lot. Scaling is not perfect, with benefits diminishing
+  sharply after using more than 6 (of 8) threads.
+* Multithreading is interesting, as the task units are quite small (one matrix multiplication) and overheads can be
+  significant.
+* Quantization only helps with SIMD optimization. Only SIMD will give access to byte-wise (int8) operations and
+  *decreasing* the data type size will *increase* the number of lanes per vector with the same factor. It is unclear
+  why going from 32-bit to 8-bit gives only a 2x speedup while being able to run 4x more operations in parallel. One
+  explanation could be that you need more instructions because of the added complexity of quantization.
+
+
 | Model                      | Quantization | Implementation              | Threads | tok / s |
 |----------------------------|--------------|-----------------------------|---------|---------|
 | stories15M.bin             | Q4           | native-avx2                 | 1       | 494     |
@@ -87,32 +114,6 @@ Implementations:
 | llama-2-7b.ggmlv3.q4_0.bin | as provided  | llama.cpp                   | 1       | 2.0     |
 | llama-2-7b.ggmlv3.q4_0.bin | as provided  | llama.cpp                   | 6       | 8.1     |
 
-
-Notes:
- * Approximate speedups are:
-   * pure Scala -> AVX2: > 10x
-   * FP32 -> Q8/Q4 (in Scala): same speed
-   * FP32 -> Q8 (AVX2): ~ 2x
-   * Q8 -> Q4 (AVX2) on one thread: same speed
-   * Q4 1 thread -> 6 threads on small models: ~ 2x
-   * Q4 1 thread -> 6 threads on large models: ~ 3x
- * The pure Scala mode GraalVM JDK 17 is only competitive with a llama2.c version compiled with `-O3`.
-   Using `-Ofast` on C already makes a huge difference. Would be interesting to see the exact differences
-   between JIT compiled code and gcc output with `-Ofast`. Not sure if something like `-Ofast` (using less strict
-   FP math) is possible on the JVM.
- * Using (i.e. mostly adapting from llama.cpp) kernels in C with SIMD intrinsics and calling them with JNI
-   from Scala makes a huge difference. It is easy to do locally, but, of course, much harder to do in a
-   portable way.
- * As expected, quantization gives another boost. Interesting that it is more pronounced when multi-threading
-   is enabled.
- * OMP-based multithreading is simple to use from C and helps a lot. Scaling is not perfect, with benefits diminishing
-   sharply after using more than 6 (of 8) threads.
- * Multithreading is interesting, as the task units are quite small (one matrix multiplication) and overheads can be
-   significant.
- * Quantization only helps with SIMD optimization. Only SIMD will give access to byte-wise (int8) operations and
-   *decreasing* the data type size will *increase* the number of lanes per vector with the same factor. It is unclear
-   why going from 32-bit to 8-bit gives only a 2x speedup while being able to run 4x more operations in parallel. One
-   explanation could be that you need more instructions because of the added complexity of quantization.
 
 ## License
 
