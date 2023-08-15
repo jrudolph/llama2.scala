@@ -257,6 +257,26 @@ object QuickFindMaxTopP extends TopPSampling {
   }
 }
 
+/**
+ * Use a variant of quickselect to find the top_p elements.
+ *
+ * The idea is to maintain three areas:
+ *  * the top elements < p
+ *  * the bottom elements < (1 - p)
+ *  * the interesting elements in the middle
+ *
+ * Then, find a pivot, swap the elements around separated by the pivot value,
+ * and figure out, if we can move either the top elements to the already selected group (if sum + current cdf < p),
+ * or whether we can discard the bottom elements.
+ *
+ * FIXME:
+ *  * One problem is that the selection of the pivot gets tricky, when only few elements are left, and you cannot make
+ *    any progress on some pivot choices. Quickselect originally uses random pivots, which works but might be too expensive.
+ * Maybe just cancelling the algorithm when we cannot make progress and the number of remaining elements is low enough,
+ * to go back to scanning might be the right choice here.
+ *  * The current problem seems to be that the algorithm seems more difficult to terminate (than the classic top-k version)?
+ *  * Or maybe something is just wrong with the tricky indexing logic in edge cases.
+ */
 object QuickSelectTopP extends TopPSampling {
   def indices(vs: Array[Float], p: Float): Array[Int] = {
     //strategy:
@@ -286,13 +306,13 @@ object QuickSelectTopP extends TopPSampling {
       //val halfRemaining = remaining / 2f
       val cutoff = (1f - p - removed) / (numInteresting - selected - 1)
 
-      //(1 - cdf - removed) * 0.1f // middle of remaining probability mass
-
       var left = selected
       var leftSum = 0f
       var rightSum = 0f
       var right = numInteresting - 1
 
+      // how to choose the pivot?
+      //(1 - cdf - removed) * 0.1f // middle of remaining probability mass
       val pivotIdx = left + r.nextInt().abs % (right - left + 1) //(left + right) / 2
       val pivotV = vs(idxs(pivotIdx))
 
@@ -345,40 +365,6 @@ object QuickSelectTopP extends TopPSampling {
 
       count += 1
       if (count == 40) ???
-      //}
-
-      /*while (cdf < p) {
-      var max = 0f
-      var maxIdx = -1
-
-
-      var i = selected
-      while (i < numInteresting && max < halfRemaining) {
-        val v = vs(idxs(i))
-        if (v > max) {
-          max = v
-          maxIdx = i
-
-          i += 1
-        } else if (v < cutoff) {
-          numInteresting -= 1
-          val tmp = idxs(i)
-          idxs(i) = idxs(numInteresting)
-          idxs(numInteresting) = tmp
-          removed += v
-
-          // don't increase i
-        } else
-          i += 1
-      }
-
-      // swap max with selected
-      val tmp = idxs(selected)
-      idxs(selected) = idxs(maxIdx)
-      idxs(maxIdx) = tmp
-      selected += 1
-      cdf += max*/
-
     }
 
     idxs.take(selected)
