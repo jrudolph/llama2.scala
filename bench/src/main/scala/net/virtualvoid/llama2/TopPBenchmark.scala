@@ -198,6 +198,11 @@ object HistogramSearch extends TopPSampling {
   }
 }
 
+/**
+ * This is a variant where filtering is applied in each step. It seems to be much slower, maybe
+ * because the main loop is more complicated and has more complicated access patterns since it
+ * keeps moving elements around till the end.
+ */
 object QuickFindMaxTopP extends TopPSampling {
   def indices(vs: Array[Float], p: Float): Array[Int] = {
     //strategy:
