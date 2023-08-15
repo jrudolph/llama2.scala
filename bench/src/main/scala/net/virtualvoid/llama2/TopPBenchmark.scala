@@ -28,7 +28,7 @@ import scala.util.Random
 @OutputTimeUnit(TimeUnit.SECONDS)
 class TopPBenchmark {
 
-  @Param(Array("quick-select-top-p", "quick-find-max-top-p", "filterAndScan", "filterAndFastSort", "filterAndSort", "sorting"))
+  @Param(Array("histogram", "quick-select-top-p", "quick-find-max-top-p", "filterAndScan", "filterAndFastSort", "filterAndSort", "sorting"))
   var method: String = _
 
   private var impl: TopPSampling = _
@@ -45,6 +45,7 @@ class TopPBenchmark {
       case "filterAndScan"        => FilterAndScan
       case "quick-find-max-top-p" => QuickFindMaxTopP
       case "quick-select-top-p"   => QuickSelectTopP
+      case "histogram"            => HistogramSearch
     }
 
     data =
@@ -188,13 +189,93 @@ object FilterAndScan extends TopPSampling {
 }
 
 object HistogramSearch extends TopPSampling {
+  def println(str: String): Unit = ()
+
   def indices(vs: Array[Float], p: Float): Array[Int] = {
     // idea: Finding top_p elements is equivalent to finding the separating element between the top_p and the rest.
     //       If we build a histogram in a way that models the distribution well enough, we might be able to find
     //       a good guess for the separating element in a single pass and only have to figure out the details out
     //       of a small set considering only the bin at the separating edge.
+    val cutoff = (1f - p) / (vs.length - 1)
 
-    ???
+    val histo: Array[Int] = new Array[Int](200) // FIXME: figure out required size
+    val sum: Array[Float] = new Array[Float](200)
+
+    // first pass: calculate histogram
+    {
+      var i = 0
+      while (i < vs.length) {
+        val v = vs(i)
+        if (v >= cutoff) {
+          val bin = (-math.log(v) * 3f).toInt
+          histo(bin) += 1
+          sum(bin) += v
+        }
+        i += 1
+      }
+    }
+
+    // print histo
+    {
+      var i = 0
+      var cumsum = 0f
+      while (i < histo.length) {
+        cumsum += sum(i)
+        println(f"$i%5d ${histo(i)}%5d ${sum(i)}%12.9f $cumsum%12.9f")
+        i += 1
+      }
+    }
+
+    var cdf = 0f
+    var lastBucket = 0
+    var numElements = 0
+
+    while (lastBucket < histo.length && cdf < p) {
+      numElements += histo(lastBucket)
+      cdf += sum(lastBucket)
+      lastBucket += 1
+    }
+    // select toCheck bucket
+    lastBucket -= 1
+
+    println(f"lastBucket: $lastBucket numElements: $numElements cdf: $cdf")
+
+    // all in lastBucket - 1
+    val selectedThreshold = math.exp(-(lastBucket - 1 + 1) / 3f)
+    val toCheckThreshold = math.exp(-(lastBucket + 1) / 3f)
+    println(f"selectedThreshold: $selectedThreshold%12.9f toCheckThreshold: $toCheckThreshold%12.9f")
+
+    val result = new Array[Int](numElements)
+    var selected = 0
+    var toCheck = numElements - histo(lastBucket)
+    println(f"selected: $selected toCheck: $toCheck")
+
+    // second pass: collect elements
+    {
+      var i = 0
+      while (i < vs.length) {
+        val v = vs(i)
+        if (v > selectedThreshold) {
+          result(selected) = i
+          selected += 1
+        } else if (v > toCheckThreshold) {
+          result(toCheck) = i
+          toCheck += 1
+        }
+
+        i += 1
+      }
+    }
+    require(selected == numElements - histo(lastBucket), f"selected: $selected numElements: $numElements histo(lastBucket): ${histo(lastBucket)}")
+
+    val remainingCdf = p - (cdf - sum(lastBucket))
+
+    val sorted = result.drop(selected).take(toCheck - selected).sortBy(-vs(_))
+    val cumSum = sorted.iterator.scanLeft(0f)(_ + vs(_))
+    val idx = cumSum.indexWhere(_ > remainingCdf)
+    val selectedIdxs = sorted.take(idx)
+
+    result.take(selected) ++ selectedIdxs
   }
 }
 
