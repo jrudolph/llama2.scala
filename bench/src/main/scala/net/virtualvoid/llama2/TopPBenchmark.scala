@@ -268,14 +268,74 @@ object HistogramSearch extends TopPSampling {
     }
     require(selected == numElements - histo(lastBucket), f"selected: $selected numElements: $numElements histo(lastBucket): ${histo(lastBucket)}")
 
-    val remainingCdf = p - (cdf - sum(lastBucket))
+    def maxLessThan(offset: Int, remaining: Float): Int = {
+      val halfRemaining = remaining / 2
+      var maxIndex = -1
+      var max = -1f
+      var i = offset
+      while (i < numElements /*&& max < halfRemaining*/ ) {
+        //val idx =
+        val v = vs(result(i))
+        if (v > max) {
+          max = v
+          maxIndex = i
+        }
+        i += 1
+      }
+      maxIndex
+    }
 
-    val sorted = result.drop(selected).take(toCheck - selected).sortBy(-vs(_))
+    {
+      var i = selected // start of uncertain area
+
+      var cumsum = cdf - sum(lastBucket)
+      //require(result.iterator.take(selected).map(vs).sum == cumsum, f"cumsum: $cumsum sum: ${result.iterator.take(selected).map(vs).sum}")
+      val maxSum = cdf
+
+      while (cumsum < p) {
+        val remaining = maxSum - cumsum
+        println(f"i: $i cumsum: $cumsum remaining: $remaining")
+
+        val maxIdx = maxLessThan(i, remaining)
+        val maxV = vs(result(maxIdx))
+
+        require(maxIdx >= i, f"maxIdx: $maxIdx i: $i")
+        println(f"maxIdx: $maxIdx v: $maxV%12.9f")
+        if (maxIdx != i) { // swap max to front
+          val tmp = result(i)
+          result(i) = result(maxIdx)
+          result(maxIdx) = tmp
+        }
+
+        //prevMax = vs(result(i))
+        //prevIndex = maxIdx
+        cumsum += maxV
+        println(f"cumsum: $cumsum maxV: $maxV%12.9f ${vs(result(i))}%12.9f")
+        //require(result.iterator.take(i + 1).map(vs).sum == cumsum, f"cumsum: $cumsum sum: ${result.iterator.take(i + 1).map(vs).sum}")
+
+        i += 1
+      }
+
+      result.take(i)
+    }
+
+    /*def collect(numFound: Int, sum: Float, prevMax: Float, prevIndex: Int): Int =
+      if (sum > p) numFound
+      else if (numFound >= idxBuffer.size) throw new IllegalStateException(s"After $numFound iterations sum is $sum")
+      else {
+        val maxIdx = maxLessThan(1f - sum, prevMax, prevIndex)
+        val v = vs(maxIdx)
+        idxBuffer(numFound) = maxIdx
+        pBuffer(numFound) = v
+        collect(numFound + 1, sum + v, v, maxIdx)
+      }*/
+
+    /*val sorted = result.drop(selected).take(toCheck - selected).sortBy(-vs(_))
     val cumSum = sorted.iterator.scanLeft(0f)(_ + vs(_))
     val idx = cumSum.indexWhere(_ > remainingCdf)
     val selectedIdxs = sorted.take(idx)
-
-    result.take(selected) ++ selectedIdxs
+*/
+    //result.take(selected) ++ selectedIdxs
   }
 }
 
