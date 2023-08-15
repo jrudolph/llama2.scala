@@ -204,27 +204,29 @@ object HistogramSearch extends TopPSampling {
     // first pass: calculate histogram
     {
       var i = 0
-      while (i < vs.length) {
+      var cdfpassed = false
+      while (i < vs.length && !cdfpassed) {
         val v = vs(i)
         if (v >= cutoff) {
           val bin = (-math.log(v) * 3f).toInt
           histo(bin) += 1
           sum(bin) += v
+          if (sum(bin) > p) cdfpassed = true
         }
         i += 1
       }
     }
 
-    // print histo
+    /*// print histo
     {
       var i = 0
       var cumsum = 0f
       while (i < histo.length) {
         cumsum += sum(i)
-        println(f"$i%5d ${histo(i)}%5d ${sum(i)}%12.9f $cumsum%12.9f")
+        //println(f"$i%5d ${histo(i)}%5d ${sum(i)}%12.9f $cumsum%12.9f")
         i += 1
       }
-    }
+    }*/
 
     var cdf = 0f
     var lastBucket = 0
@@ -238,17 +240,17 @@ object HistogramSearch extends TopPSampling {
     // select toCheck bucket
     lastBucket -= 1
 
-    println(f"lastBucket: $lastBucket numElements: $numElements cdf: $cdf")
+    //println(f"lastBucket: $lastBucket numElements: $numElements cdf: $cdf")
 
     // all in lastBucket - 1
     val selectedThreshold = math.exp(-(lastBucket - 1 + 1) / 3f)
     val toCheckThreshold = math.exp(-(lastBucket + 1) / 3f)
-    println(f"selectedThreshold: $selectedThreshold%12.9f toCheckThreshold: $toCheckThreshold%12.9f")
+    //println(f"selectedThreshold: $selectedThreshold%12.9f toCheckThreshold: $toCheckThreshold%12.9f")
 
     val result = new Array[Int](numElements)
     var selected = 0
     var toCheck = numElements - histo(lastBucket)
-    println(f"selected: $selected toCheck: $toCheck")
+    //println(f"selected: $selected toCheck: $toCheck")
 
     // second pass: collect elements
     {
@@ -294,13 +296,13 @@ object HistogramSearch extends TopPSampling {
 
       while (cumsum < p) {
         val remaining = maxSum - cumsum
-        println(f"i: $i cumsum: $cumsum remaining: $remaining")
+        //println(f"i: $i cumsum: $cumsum remaining: $remaining")
 
         val maxIdx = maxLessThan(i, remaining)
         val maxV = vs(result(maxIdx))
 
         require(maxIdx >= i, f"maxIdx: $maxIdx i: $i")
-        println(f"maxIdx: $maxIdx v: $maxV%12.9f")
+        //println(f"maxIdx: $maxIdx v: $maxV%12.9f")
         if (maxIdx != i) { // swap max to front
           val tmp = result(i)
           result(i) = result(maxIdx)
@@ -310,7 +312,7 @@ object HistogramSearch extends TopPSampling {
         //prevMax = vs(result(i))
         //prevIndex = maxIdx
         cumsum += maxV
-        println(f"cumsum: $cumsum maxV: $maxV%12.9f ${vs(result(i))}%12.9f")
+        //println(f"cumsum: $cumsum maxV: $maxV%12.9f ${vs(result(i))}%12.9f")
         //require(result.iterator.take(i + 1).map(vs).sum == cumsum, f"cumsum: $cumsum sum: ${result.iterator.take(i + 1).map(vs).sum}")
 
         i += 1
