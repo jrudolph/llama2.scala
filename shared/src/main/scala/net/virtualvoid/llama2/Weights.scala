@@ -30,7 +30,7 @@ object Weights {
   def apply(config: Config, buffers: Buffers): Weights = new Weights { orig =>
     import buffers._
 
-    val tokenEmbeddingTable = d2(config.vocabSize, config.dim).quantizeQ4
+    val tokenEmbeddingTable = d2(config.vocabSize, config.dim)
     val rms_att_weight = d2(config.nLayers, config.dim)
     val wq = d3(config.nLayers, config.dim, config.dim)
     val wk = d3(config.nLayers, config.dim, config.dim)
