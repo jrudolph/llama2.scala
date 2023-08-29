@@ -320,24 +320,6 @@ object HistogramSearch extends TopPSampling {
 
       result.take(i)
     }
-
-    /*def collect(numFound: Int, sum: Float, prevMax: Float, prevIndex: Int): Int =
-      if (sum > p) numFound
-      else if (numFound >= idxBuffer.size) throw new IllegalStateException(s"After $numFound iterations sum is $sum")
-      else {
-        val maxIdx = maxLessThan(1f - sum, prevMax, prevIndex)
-        val v = vs(maxIdx)
-        idxBuffer(numFound) = maxIdx
-        pBuffer(numFound) = v
-        collect(numFound + 1, sum + v, v, maxIdx)
-      }*/
-
-    /*val sorted = result.drop(selected).take(toCheck - selected).sortBy(-vs(_))
-    val cumSum = sorted.iterator.scanLeft(0f)(_ + vs(_))
-    val idx = cumSum.indexWhere(_ > remainingCdf)
-    val selectedIdxs = sorted.take(idx)
-*/
-    //result.take(selected) ++ selectedIdxs
   }
 }
 
