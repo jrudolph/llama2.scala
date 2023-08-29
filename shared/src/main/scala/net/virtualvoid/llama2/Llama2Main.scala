@@ -16,8 +16,21 @@ object Llama2Main extends App {
 
   val ggmlFile = new File(baseDir, "llama-2-7b.ggmlv3.q4_0.bin")
 
-  //val model = Llama2Model.fromLlama2CModel(checkpointFile, tokenizerFile)
-  val model = Llama2Model.fromGgml(ggmlFile)
+  val model = Llama2Model.fromLlama2CModel(checkpointFile, tokenizerFile)
+  //val model = Llama2Model.fromGgml(ggmlFile)
+
+  def printConfig(config: Config): Unit = {
+    def p(name: String, value: Int): Unit = println(f"$name%-20s: $value%5d")
+
+    p("Layers", config.nLayers)
+    p("Dimension", config.dim)
+    p("Hidden Dimension", config.hiddenDim)
+    p("Heads", config.nHeads)
+    p("Head Size", config.headSize)
+    p("Vocab Size", config.vocabSize)
+  }
+
+  printConfig(model.config)
 
   val useTensor = true
   val transformer: Llama2Transformer =
@@ -32,7 +45,7 @@ object Llama2Main extends App {
   val sampler = TemperatureSampling(0.9f)
 
   def run(): Unit = {
-    val steps = 30
+    val steps = 256
     val runner = new Llama2Runner(transformer, model)
     val start = System.nanoTime()
     runner.iterate(steps, sampler = sampler).foreach { x => print(x); Console.out.flush() }
