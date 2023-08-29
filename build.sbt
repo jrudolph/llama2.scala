@@ -1,6 +1,8 @@
 import scala.scalanative.build._
 
 val scalaV = "3.3.0"
+val pekkoV = "1.0.1"
+val pekkoHttpV = "1.0.0"
 val scalaTestV = "3.2.16"
 
 lazy val llama2 =
@@ -34,6 +36,20 @@ lazy val bench = project.in(file("bench"))
   .settings(
     scalaVersion := scalaV,
     libraryDependencies += "io.spray" %% "spray-json" % "1.3.6"
+  )
+
+lazy val web = project.in(file("web"))
+  .dependsOn(llama2.jvm)
+  .enablePlugins(SbtTwirl)
+  .settings(
+    scalaVersion := scalaV,
+    libraryDependencies ++=
+      Seq(
+        "org.apache.pekko" %% "pekko-stream" % pekkoV,
+        "org.apache.pekko" %% "pekko-http" % pekkoHttpV,
+        "io.spray" %% "spray-json" % "1.3.6",
+        "com.typesafe.play" %% "twirl-api" % "1.6.0-RC4"
+      )
   )
 
 // docs
