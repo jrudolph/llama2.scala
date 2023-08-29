@@ -49,7 +49,7 @@ class TopPBenchmark {
     }
 
     data =
-      Source.fromInputStream(new GZIPInputStream(new FileInputStream("../outprobs.txt.gz"))).getLines()
+      Source.fromInputStream(new GZIPInputStream(new FileInputStream("probs-100.txt.gz"))).getLines()
         .take(100)
         .map(_.split(",").map(_.toFloat))
         .toVector
