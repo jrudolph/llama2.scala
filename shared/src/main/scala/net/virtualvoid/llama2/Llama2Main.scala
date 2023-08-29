@@ -26,7 +26,8 @@ object Llama2Main extends App {
     else
       Llama2SimpleTransformer.init(model)
 
-  VectMult.setParallelism(6)
+  if (MathImplementation.Default.getClass == classOf[AVX2MathImplementation.type])
+    VectMult.setParallelism(6)
 
   val sampler = TemperatureSampling(0.9f)
 
