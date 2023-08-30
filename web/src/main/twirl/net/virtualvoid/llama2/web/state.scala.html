@@ -6,7 +6,7 @@
 <h2>Generation</h2>
 
 <div class="generation">
-@for(step <- state.stateHistory.dropRight(1)) {<span><a style="color: @{Colors.GreenToRed.colorFor(1f / (step.chosenTokenRank + 1))};" title="Rank: @{step.chosenTokenRank}" href="/prompt?tokens=@{step.stateHistory.map(_.chosenToken).mkString(",")}">@{step.chosenTokenText}</a></span>}
+@for(step <- state.stateHistory.dropRight(1)) {<span><a style="color: @{Colors.GreenToRed.colorFor(step.chosenTokenProb)};" title="P: @{step.chosenTokenProb.formatted("%7.4f")} Rank: @{step.chosenTokenRank}" href="/prompt?tokens=@{step.stateHistory.map(_.chosenToken).mkString(",")}">@{step.chosenTokenText}</a></span>}
 </div>
 
 <h4>Continue</h4>
@@ -18,14 +18,13 @@
 
 <h4>Top completions</h4>
 <table>
-  <tr><th>Logit value</th><th>Prob</th><th>TokenID</th><th>Text</th></th>
+  <tr><th>Logit value</th><th>Prob</th><th>Cum. Prob.</th><th>TokenID</th><th>Text</th></th>
 @for(
   x <- Seq(1);
   ps = { val res = Tensor1DMut(state.logits.toArray.clone(), state.logits.size); res.softmaxMut(); res };
-  (ll, token) <- state.logits.zipWithIndex.sortBy(-_._1).take(20);
-  p = ps(token)
+  (ll, token, p, cum) <- state.logits.zipWithIndex.sortBy(-_._1).take(50).map(x => (x._1, x._2, ps(x._2))).scanLeft((0f, 0, 0f, 0f))((a, b) => (b._1, b._2, b._3, b._3 + a._4)).drop(1)
 ) {
-  <tr><td>@{ll.formatted("%7.4f")}</td><td>@{p.formatted("%7.4f")}</td><td>@{token}</td>
+  <tr><td>@{ll.formatted("%7.4f")}</td><td>@{p.formatted("%7.4f")}</td><td>@{cum.formatted("%7.4f")}</td><td>@{token}</td>
   <td><a href="/prompt?tokens=@{(state.stateHistory.dropRight(1).map(_.chosenToken) :+ token).mkString(",")}">@{state.model.vocab.tokenScores(token)._1}</a></td></tr>
 }
 </table>

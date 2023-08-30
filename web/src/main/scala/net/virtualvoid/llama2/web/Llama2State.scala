@@ -44,8 +44,15 @@ trait Llama2State {
       nextState.prompt(rem)
     }
 
-  def chosenTokenText: String = model.vocab.tokenScores(chosenToken)._1
-  def chosenTokenRank: Int = logits.zipWithIndex.sortBy(-_._1).indexWhere(_._2 == chosenToken)
+  lazy val probabilities: Seq[Float] = {
+    val probs = Tensor1DMut(logits.toArray, logits.size)
+    probs.softmaxMut()
+    probs.toFloatArray.toVector
+  }
+
+  lazy val chosenTokenText: String = model.vocab.tokenScores(chosenToken)._1
+  lazy val chosenTokenRank: Int = logits.zipWithIndex.sortBy(-_._1).indexWhere(_._2 == chosenToken)
+  lazy val chosenTokenProb: Float = probabilities(chosenToken)
   def text: String = stateHistory.map(i => model.vocab.tokenScores(i.chosenToken)._1).mkString
 }
 
