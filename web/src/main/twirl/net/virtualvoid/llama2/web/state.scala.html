@@ -1,0 +1,19 @@
+@import net.virtualvoid.llama2._
+@import web._
+
+@(state: Llama2State)
+
+<div>
+@for(step <- state.stateHistory) {<span><a href="/prompt?tokens=@{step.stateHistory.map(_.chosenToken).mkString(",")}">@{step.chosenTokenText}</a></span>}
+</div>
+
+<h4>Top completions</h4>
+<table>
+@for(
+  (ll, token) <- state.logits.zipWithIndex.sortBy(-_._1).take(20);
+  ps = { val res = Tensor1DMut(state.logits.toArray, state.logits.size); res.softmaxMut(); res };
+  p = ps(token)
+) {
+  <tr><td>@{ll.formatted("%7.4f")}</td><td>@{p.formatted("%7.4f")}</td><td>@{token}</td><td>@{state.model.vocab.tokenScores(token)._1}</td></tr>
+}
+</table>

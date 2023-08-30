@@ -29,6 +29,23 @@ trait Llama2State {
 
   def next(transformer: Llama2Transformer, sampler: Sampler): Llama2State
 
+  def next(n: Int, transformer: Llama2Transformer, sampler: Sampler): Llama2State =
+    if (n > 0) {
+      //println(s"${state.sequenceLength} ${state.text}")
+      val state = next(transformer, sampler)
+      state.next(n - 1, transformer, sampler)
+    } else this
+
+  def prompt(nextTokens: Seq[Int]): Llama2State =
+    if (nextTokens.isEmpty) this
+    else {
+      val n +: rem = nextTokens
+      val nextState = next(Llama2TensorTransformer.init(model), ChooseToken(n))
+      nextState.prompt(rem)
+    }
+
+  def chosenTokenText: String = model.vocab.tokenScores(chosenToken)._1
+  def chosenTokenRank: Int = logits.zipWithIndex.sortBy(-_._1).indexWhere(_._2 == chosenToken)
   def text: String = stateHistory.map(i => model.vocab.tokenScores(i.chosenToken)._1).mkString
 }
 
@@ -89,7 +106,7 @@ object Llama2State {
   }
 }
 
-object Llama2StateTest extends App {
+object Llama2StateTest /*extends App*/ {
   val baseDir = { // reStart runs with a subdirectory as the working directory
     val firstTry = new File("tokenizer.bin")
     if (firstTry.exists()) firstTry.getParentFile
@@ -121,13 +138,14 @@ object Llama2StateTest extends App {
 
   val initial = Llama2State(model)
   val transformer = Llama2TensorTransformer.init(model)
-  val sampler = ArgmaxSampler
+  val sampler = TemperatureSampling(1f, 0.99f)
 
-  def gen(state: Llama2State, remaining: Int): Unit =
+  def gen(state: Llama2State, remaining: Int): Llama2State =
     if (remaining > 0) {
-      println(s"${state.sequenceLength} ${state.text}")
+      //println(s"${state.sequenceLength} ${state.text}")
       gen(state.next(transformer, sampler), remaining - 1)
-    }
+    } else state
 
-  gen(initial, 30)
+  val finalState = gen(initial, 200)
+  println(finalState.stateHistory.map(h => s"${h.chosenTokenText} (${h.chosenTokenRank})").mkString)
 }
