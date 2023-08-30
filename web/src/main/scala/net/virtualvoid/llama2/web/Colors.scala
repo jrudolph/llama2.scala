@@ -40,6 +40,9 @@ object Colors {
   val GreenToRed =
     linearPalette(1, 0, Seq(100f / 360f, 1f, 0.6f), Seq(0f, 1f, 1f)).comap(x => x)
 
+  val WhiteToBlue =
+    linearPalette(1, 0, Seq(190f / 360f, 0f, 1f), Seq(190f / 360f, 1f, 1f)).comap(x => x * x)
+
   def logarithmicPalette(min: Float, max: Float, fromHsv: Seq[Float], toHsv: Seq[Float]): Palette =
     linearPalette(math.log(min).toFloat, math.log(max).toFloat, fromHsv, toHsv).comap(math.log(_).toFloat)
 
