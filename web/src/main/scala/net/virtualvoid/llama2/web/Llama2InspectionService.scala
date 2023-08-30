@@ -88,8 +88,8 @@ object Llama2State {
         else history(t).v.toFloatArray(layer * dim + idx)
     }
 
-    val _logits = transformer.step(lastToken, pos, kv)
-    val _chosenToken = _sampler.sample(Tensor1DMut(_logits, _logits.size))
+    val _logits = transformer.step(lastToken, pos, kv).toVector
+    val _chosenToken = _sampler.sample(Tensor1DMut(_logits.toArray, _logits.size))
 
     new Llama2State {
       val model: Llama2Model = _model

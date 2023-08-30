@@ -3,17 +3,29 @@
 
 @(state: Llama2State)
 
+<h2>Generation</h2>
+
+<div class="generation">
+@for(step <- state.stateHistory.dropRight(1)) {<span><a style="color: @{Colors.GreenToRed.colorFor(1f / (step.chosenTokenRank + 1))};" title="Rank: @{step.chosenTokenRank}" href="/prompt?tokens=@{step.stateHistory.map(_.chosenToken).mkString(",")}">@{step.chosenTokenText}</a></span>}
+</div>
+
+<h4>Continue</h4>
+
 <div>
-@for(step <- state.stateHistory) {<span><a href="/prompt?tokens=@{step.stateHistory.map(_.chosenToken).mkString(",")}">@{step.chosenTokenText}</a></span>}
+  <div><a href="/generate?method=topp&n=20&tokens=@{state.stateHistory.dropRight(1).map(_.chosenToken).mkString(",")}">Generate 20 more with Temperature 1 and top-p = 0.9f</a></div>
+  <div><a href="/generate?method=argmax&n=20&tokens=@{state.stateHistory.dropRight(1).map(_.chosenToken).mkString(",")}">Generate 20 more with greedy search</a></div>
 </div>
 
 <h4>Top completions</h4>
 <table>
+  <tr><th>Logit value</th><th>Prob</th><th>TokenID</th><th>Text</th></th>
 @for(
+  x <- Seq(1);
+  ps = { val res = Tensor1DMut(state.logits.toArray.clone(), state.logits.size); res.softmaxMut(); res };
   (ll, token) <- state.logits.zipWithIndex.sortBy(-_._1).take(20);
-  ps = { val res = Tensor1DMut(state.logits.toArray, state.logits.size); res.softmaxMut(); res };
   p = ps(token)
 ) {
-  <tr><td>@{ll.formatted("%7.4f")}</td><td>@{p.formatted("%7.4f")}</td><td>@{token}</td><td>@{state.model.vocab.tokenScores(token)._1}</td></tr>
+  <tr><td>@{ll.formatted("%7.4f")}</td><td>@{p.formatted("%7.4f")}</td><td>@{token}</td>
+  <td><a href="/prompt?tokens=@{(state.stateHistory.dropRight(1).map(_.chosenToken) :+ token).mkString(",")}">@{state.model.vocab.tokenScores(token)._1}</a></td></tr>
 }
 </table>

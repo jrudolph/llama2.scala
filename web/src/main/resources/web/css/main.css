@@ -1,0 +1,9 @@
+.generation a {
+    color: #000000;
+    text-decoration: none;
+}
+
+.generation a:hover {
+    color: #000000;
+    text-decoration: underline;
+}
