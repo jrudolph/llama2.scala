@@ -2,6 +2,30 @@ package net.virtualvoid.llama2
 
 import java.io.File
 
+abstract class KV {
+  def storeKey(layer: Int, pos: Int, key: Tensor1DMut): Unit
+  def storeValue(layer: Int, pos: Int, key: Tensor1DMut): Unit
+
+  def key(layer: Int, pos: Int, idx: Int): Float
+  def value(layer: Int, pos: Int, idx: Int): Float
+}
+
+object KV {
+  def apply(config: Config): KV = new KV {
+    import config._
+    val keyCache = Tensor3DMut.zero(config.nLayers, seqLen, dim)
+    val keyArray = keyCache.toFloatArray
+    val valueCache = Tensor3DMut.zero(config.nLayers, seqLen, dim)
+    val valueArray = valueCache.toFloatArray
+
+    def storeKey(layer: Int, pos: Int, key: Tensor1DMut): Unit = keyCache(layer)(pos) := key
+    def storeValue(layer: Int, pos: Int, key: Tensor1DMut): Unit = valueCache(layer)(pos) := key
+
+    def key(layer: Int, pos: Int, idx: Int): Float = keyArray(layer * seqLen * dim + pos * dim + idx)
+    def value(layer: Int, pos: Int, idx: Int): Float = valueArray(layer * seqLen * dim + pos * dim + idx)
+  }
+}
+
 /**
  * @param x input
  * @param xb input with rmsnorm applied
@@ -17,20 +41,18 @@ import java.io.File
  * @param valueCache value cache for multiquery
  */
 class Llama2TensorTransformer(
-    config:         Config,
-    weights:        Weights,
-    val x:          Tensor1DMut, // dim
-    val xb:         Tensor1DMut, // dim
-    val xb2:        Tensor1DMut, // dim
-    val hb:         Tensor1DMut, // hiddenDim
-    val hb2:        Tensor1DMut, // hiddenDim
-    val q:          Tensor1DMut, // dim
-    val k:          Tensor1DMut, // dim
-    val v:          Tensor1DMut, // dim
-    val att:        Tensor2DMut, // nHeads, seqLength
-    val logits:     Tensor1DMut, // vocabSize
-    val keyCache:   Tensor3DMut, // layer, seqLength, dim
-    val valueCache: Tensor3DMut // layer, seqLength, dim
+    config:     Config,
+    weights:    Weights,
+    val x:      Tensor1DMut, // dim
+    val xb:     Tensor1DMut, // dim
+    val xb2:    Tensor1DMut, // dim
+    val hb:     Tensor1DMut, // hiddenDim
+    val hb2:    Tensor1DMut, // hiddenDim
+    val q:      Tensor1DMut, // dim
+    val k:      Tensor1DMut, // dim
+    val v:      Tensor1DMut, // dim
+    val att:    Tensor2DMut, // nHeads, seqLength
+    val logits: Tensor1DMut // vocabSize
 ) extends Llama2Transformer {
   import config._
 
@@ -55,7 +77,7 @@ class Llama2TensorTransformer(
     trace1d("embedding", x)
   }
 
-  def attention(pos: Int, l: Int, freq_cis_real_row: Tensor1D, freq_cis_imag_row: Tensor1D): Unit = {
+  def attention(pos: Int, l: Int, freq_cis_real_row: Tensor1D, freq_cis_imag_row: Tensor1D, kv: KV): Unit = {
     // attention rmsnorm
     xb := x.rmsnorm(rms_att_weight(l), eps)
 
@@ -103,10 +125,8 @@ class Llama2TensorTransformer(
     trace1d("k_rope", k)
     trace1d("v_rope", v)
 
-    // cache kv at this pos
-    val loff = l * seqLen * dim
-    keyCache(l)(pos) := k
-    valueCache(l)(pos) := v
+    kv.storeKey(l, pos, k)
+    kv.storeValue(l, pos, v)
 
     // multihead attention
     {
@@ -120,12 +140,11 @@ class Llama2TensorTransformer(
         {
           var t = 0
           while (t <= /* ! */ pos) {
-            val kCacheOff = loff + t * dim + h * headSize
 
             var score = 0f // q(h)
             var i = 0
             while (i < headSize) {
-              score += q.toFloatArray(qOff + i) * keyCache.toFloatArray(kCacheOff + i)
+              score += q.toFloatArray(qOff + i) * kv.key(l, t, h * headSize + i)
               i += 1
             }
             score /= math.sqrt(headSize).toFloat
@@ -156,8 +175,6 @@ class Llama2TensorTransformer(
           // sum
           var t = 0
           while (t <= /* ! */ pos) {
-            // get the value vector for this head and at this timestep
-            val vOff = loff + t * dim + h * headSize
             // get the attention weight for this timestep
             val a = att.toFloatArray(attOffset + t) // accumulate the weighted value into xb
             //println(f"a $h%d $t%d $a%f")
@@ -166,7 +183,7 @@ class Llama2TensorTransformer(
             {
               var i = 0
               while (i < headSize) {
-                xb(xbOff + i) += valueCache.toFloatArray(vOff + i) * a
+                xb(xbOff + i) += a * kv.value(l, t, h * headSize + i)
                 //println(f"v $h%d $t%d $i%d ${valueCache(vOff + i)}%f $a%f ${xb(xbOff + i)}%f")
                 i += 1
               }
@@ -229,7 +246,7 @@ class Llama2TensorTransformer(
     logits := wcls `@` x
   }
 
-  def step(token: Int, pos: Int): Array[Float] = {
+  def step(token: Int, pos: Int, kv: KV): Array[Float] = {
 
     println(s"Step $pos token $token")
 
@@ -244,7 +261,7 @@ class Llama2TensorTransformer(
     while (l < nLayers) {
       println(s"start layer $l")
 
-      attention(pos, l, freq_cis_real_row, freq_cis_imag_row)
+      attention(pos, l, freq_cis_real_row, freq_cis_imag_row, kv: KV)
       ffn(l)
 
       l += 1
@@ -271,9 +288,7 @@ object Llama2TensorTransformer {
       k = Tensor1DMut.zero(dim),
       v = Tensor1DMut.zero(dim),
       att = Tensor2DMut.zero(nHeads, seqLen),
-      logits = Tensor1DMut.zero(config.vocabSize),
-      keyCache = Tensor3DMut.zero(config.nLayers, seqLen, dim),
-      valueCache = Tensor3DMut.zero(config.nLayers, seqLen, dim)
+      logits = Tensor1DMut.zero(config.vocabSize)
     )
   }
 }
