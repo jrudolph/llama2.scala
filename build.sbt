@@ -50,7 +50,13 @@ lazy val web = project.in(file("web"))
         "org.apache.pekko" %% "pekko-http-caching" % pekkoHttpV,
         "io.spray" %% "spray-json" % "1.3.6",
         "com.typesafe.play" %% "twirl-api" % "1.6.0-RC4"
-      )
+      ),
+
+    // setup docker build
+    // use separate dependency and app jars
+    assembly / assemblyOption := (assembly / assemblyOption).value.withIncludeScala(false).withIncludeDependency(false),
+    assembly / assemblyJarName := "app.jar", // contract with Dockerfile
+    assemblyPackageDependency / assemblyJarName := "deps.jar" // contract with Dockerfile
   )
 
 // docs

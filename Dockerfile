@@ -16,7 +16,9 @@ COPY project/* /tmp/project/project/
 
 RUN /sbt update "show web/assemblyPackageDependency"
 
-COPY src /tmp/project/src
+COPY jvm /tmp/project/jvm
+COPY shared /tmp/project/shared
+COPY web /tmp/project/web
 
 RUN /sbt "show web/assembly"
 
