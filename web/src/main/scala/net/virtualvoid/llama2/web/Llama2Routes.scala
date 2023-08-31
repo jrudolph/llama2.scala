@@ -18,7 +18,9 @@ class Llama2Routes(initialState: Llama2State)(implicit system: ActorSystem) exte
 
   val stateCache = LfuCache[Seq[Int], Llama2State]
 
-  val main =
+  lazy val main = encodeResponse(mainRoute)
+
+  lazy val mainRoute =
     concat(
       path("prompt") {
         stateAtPrompt { state0 =>

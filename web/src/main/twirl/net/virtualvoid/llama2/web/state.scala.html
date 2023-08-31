@@ -21,7 +21,7 @@
   <tr style="font-size: smaller">
     <th>Layer</th><th>Head</th><th>&lt;s&gt;</th>
 @for(step <- state.stateHistory.dropRight(1)) {
-    <th>@{step.chosenTokenText}</th>
+    <th class="generation"><a href="/prompt?tokens=@{step.stateHistory.map(_.chosenToken).mkString(",")}">@{step.chosenTokenText}</a></th>
 }
   </tr>
 @for(Attention(l, h, att) <- state.attention) {

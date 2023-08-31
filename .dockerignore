@@ -1,0 +1,4 @@
+**/target
+# FIXME: won't help as long as .git is in the context
+# Dockerfile
+# .gitignore
