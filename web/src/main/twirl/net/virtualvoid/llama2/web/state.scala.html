@@ -3,7 +3,7 @@
 
 @(state: Llama2State)
 
-<h2>Generation</h2>
+<h2>@{state.model.name}</h2>
 
 <div class="generation">
 @for(step <- state.stateHistory.dropRight(1)) {<span><a style="color: @{Colors.GreenToRed.colorFor(step.chosenTokenProb)};" title="P: @{step.chosenTokenProb.formatted("%7.4f")} Rank: @{step.chosenTokenRank}" href="/prompt?tokens=@{step.stateHistory.map(_.chosenToken).mkString(",")}">@{step.chosenTokenText}</a></span>}
