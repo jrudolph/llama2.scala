@@ -46,6 +46,14 @@ object Colors {
   val AttentionColoring =
     linearPalette(0, 1, Seq(190f / 360f, 0f, 1f), Seq(190f / 360f, 1f, 1f))
 
+  val Classifier =
+    linearPalette(-1000, -50, Seq(0f, 1f, 1f), Seq(0f, 1f, 1f)) |
+      linearPalette(-50, 0, Seq(0f, 1f, 1f), Seq(0f, 0f, 1f)) |
+      linearPalette(0, 50, Seq(100f / 360f, 0f, 1f), Seq(100f / 360f, 1f, 1f)) |
+      linearPalette(50, 1000, Seq(100f / 360f, 1f, 1f), Seq(100f / 360f, 1f, 1f))
+
+  val ClassifierMatch = Classifier.comap(x => x * 30f)
+
   def logarithmicPalette(min: Float, max: Float, fromHsv: Seq[Float], toHsv: Seq[Float]): Palette =
     linearPalette(math.log(min).toFloat, math.log(max).toFloat, fromHsv, toHsv).comap(math.log(_).toFloat)
 

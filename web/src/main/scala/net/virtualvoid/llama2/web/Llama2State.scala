@@ -26,6 +26,7 @@ trait Llama2State {
   def v: Tensor2DMut // layer * dim
 
   def attention: Seq[Attention]
+  def classifier: Tensor1DMut
 
   /** Output of the network at this step */
   def logits: Seq[Float]
@@ -73,6 +74,7 @@ object Llama2State {
     def v: Tensor2DMut = ???
     def logits: Seq[Float] = ???
     def attention: Seq[Attention] = ???
+    def classifier: Tensor1DMut = ???
 
     val chosenToken: Int = 1
     val sampler: Sampler = ChooseToken(1)
@@ -104,6 +106,8 @@ object Llama2State {
         if (t == pos) _v.toFloatArray(layer * dim + idx)
         else history(t).v.toFloatArray(layer * dim + idx)
     }
+    val cls = Tensor1DMut.zero(dim)
+
     val attBuffer = Vector.newBuilder[Attention]
     val reporter = new Reporter {
       def attention(pos: Int, l: Int, h: Int, attention: Tensor1D): Unit = {
@@ -111,6 +115,7 @@ object Llama2State {
         buf := attention
         attBuffer += Attention(l, h, buf)
       }
+      def classifier(x: Tensor1D): Unit = cls := x
     }
 
     val _logits = transformer.step(lastToken, pos, kv, reporter).toVector
@@ -124,6 +129,8 @@ object Llama2State {
       val v: Tensor2DMut = _v
       val logits: Seq[Float] = _logits.toVector
       val attention: Seq[Attention] = attBuffer.result()
+      val classifier: Tensor1DMut = cls
+
       val chosenToken: Int = _chosenToken
       val sampler: Sampler = _sampler
       def next(transformer: Llama2Transformer, sampler: Sampler): Llama2State =

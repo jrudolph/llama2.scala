@@ -37,13 +37,19 @@
 
 <h4>Top completions</h4>
 <table>
-  <tr><th>Logit value</th><th>Prob</th><th>Cum. Prob.</th><th>TokenID</th><th>Text</th></th>
+  <tr><th>Logit value</th><th>Prob</th><th>Cum. Prob.</th><th>ID</th><th>-- Token --</th>
+    <td class="vmap">@for(c <- state.classifier.toFloatArray){<span style="background-color: @{Colors.Classifier.colorFor(c)}"></span>}</td>
+
+  </tr>
 @for(
   x <- Seq(1);
   ps = { val res = Tensor1DMut(state.logits.toArray.clone(), state.logits.size); res.softmaxMut(); res };
-  (ll, token, p, cum) <- state.logits.zipWithIndex.sortBy(-_._1).take(50).map(x => (x._1, x._2, ps(x._2))).scanLeft((0f, 0, 0f, 0f))((a, b) => (b._1, b._2, b._3, b._3 + a._4)).drop(1)
+  (ll, token, p, cum) <- state.logits.zipWithIndex.sortBy(-_._1).take(100).map(x => (x._1, x._2, ps(x._2))).scanLeft((0f, 0, 0f, 0f))((a, b) => (b._1, b._2, b._3, b._3 + a._4)).drop(1)
 ) {
-  <tr><td>@{ll.formatted("%7.4f")}</td><td style="color: @{Colors.GreenToRed.colorFor(p)}">@{p.formatted("%7.4f")}</td><td style="background-color: @{Colors.WhiteToBlue.colorFor(cum - p)}">@{cum.formatted("%7.4f")}</td><td>@{token}</td>
-  <td><a href="/prompt?tokens=@{(state.stateHistory.dropRight(1).map(_.chosenToken) :+ token).mkString(",")}">@{state.model.vocab.tokenScores(token)._1}</a></td></tr>
+  <tr>
+    <td>@{ll.formatted("%7.4f")}</td><td style="color: @{Colors.GreenToRed.colorFor(p)}">@{p.formatted("%7.4f")}</td><td style="background-color: @{Colors.WhiteToBlue.colorFor(cum - p)}">@{cum.formatted("%7.4f")}</td><td>@{token}</td>
+    <td><a href="/prompt?tokens=@{(state.stateHistory.dropRight(1).map(_.chosenToken) :+ token).mkString(",")}">@{state.model.vocab.tokenScores(token)._1}</a></td>
+    <td class="vmap">@for(x <- Seq(1); vs = { val res = Tensor1DMut.zero(state.model.config.dim); res := state.model.weights.wcls(token); res ∘= state.classifier; res.toFloatArray }; v <- vs){<span style="background-color: @{Colors.ClassifierMatch.colorFor(v)}"></span>}</td>
+  </tr>
 }
 </table>

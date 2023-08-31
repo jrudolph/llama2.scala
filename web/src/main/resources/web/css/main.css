@@ -7,3 +7,15 @@
     color: #000000;
     text-decoration: underline;
 }
+
+.vmap {
+    white-space: nowrap;
+}
+.vmap span {
+    width: 4px;
+    height: 8px;
+    border-spacing: 0;
+    padding: 0;
+    display: inline-block;
+
+}

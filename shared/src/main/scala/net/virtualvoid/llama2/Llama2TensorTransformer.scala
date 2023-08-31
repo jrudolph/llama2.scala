@@ -28,9 +28,11 @@ object KV {
 
 abstract class Reporter {
   def attention(pos: Int, l: Int, h: Int, attention: Tensor1D): Unit
+  def classifier(x: Tensor1D): Unit
 }
 object NoReporter extends Reporter {
   def attention(pos: Int, l: Int, h: Int, attention: Tensor1D): Unit = ()
+  def classifier(x: Tensor1D): Unit = ()
 }
 
 /**
@@ -247,9 +249,11 @@ class Llama2TensorTransformer(
     trace1d(s"layer done", x)
   }
 
-  def calcLogits(): Unit = {
+  def calcLogits(reporter: Reporter): Unit = {
     // final rmsnorm
     x := x.rmsnorm(rms_final_weight, eps)
+
+    reporter.classifier(x)
 
     // classifier into logits
     logits := wcls `@` x
@@ -276,7 +280,7 @@ class Llama2TensorTransformer(
       l += 1
     }
 
-    calcLogits()
+    calcLogits(reporter)
 
     logits
   }
