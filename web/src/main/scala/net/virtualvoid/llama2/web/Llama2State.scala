@@ -7,6 +7,12 @@ case class ChooseToken(token: Int) extends Sampler {
   def sample(logits: Tensor1DMut): Int = token
 }
 
+case class Attention(
+                    layer: Int,
+                    head: Int,
+                    attention: Tensor1DMut,
+                    )
+
 trait Llama2State {
   def model: Llama2Model
 
@@ -18,6 +24,8 @@ trait Llama2State {
   // Calculated k and v values for each layer in this step
   def k: Tensor2DMut // layer * dim
   def v: Tensor2DMut // layer * dim
+
+  def attention: Seq[Attention]
 
   /** Output of the network at this step */
   def logits: Seq[Float]
@@ -64,6 +72,8 @@ object Llama2State {
     def k: Tensor2DMut = ???
     def v: Tensor2DMut = ???
     def logits: Seq[Float] = ???
+    def attention: Seq[Attention] = ???
+
     val chosenToken: Int = 1
     val sampler: Sampler = ChooseToken(1)
     def next(transformer: Llama2Transformer, sampler: Sampler): Llama2State =
@@ -94,8 +104,16 @@ object Llama2State {
         if (t == pos) _v.toFloatArray(layer * dim + idx)
         else history(t).v.toFloatArray(layer * dim + idx)
     }
+    val attBuffer = Vector.newBuilder[Attention]
+    val reporter = new Reporter {
+      def attention(pos: Int, l: Int, h: Int, attention: Tensor1D): Unit = {
+        val buf = Tensor1DMut.zero(attention.size)
+        buf := attention
+        attBuffer += Attention(l, h, buf)
+      }
+    }
 
-    val _logits = transformer.step(lastToken, pos, kv).toVector
+    val _logits = transformer.step(lastToken, pos, kv, reporter).toVector
     val _chosenToken = _sampler.sample(Tensor1DMut(_logits.toArray, _logits.size))
 
     new Llama2State {
@@ -105,6 +123,7 @@ object Llama2State {
       val k: Tensor2DMut = _k
       val v: Tensor2DMut = _v
       val logits: Seq[Float] = _logits.toVector
+      val attention: Seq[Attention] = attBuffer.result()
       val chosenToken: Int = _chosenToken
       val sampler: Sampler = _sampler
       def next(transformer: Llama2Transformer, sampler: Sampler): Llama2State =

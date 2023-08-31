@@ -26,6 +26,13 @@ object KV {
   }
 }
 
+abstract class Reporter {
+  def attention(pos: Int, l: Int, h: Int, attention: Tensor1D): Unit
+}
+object NoReporter extends Reporter {
+  def attention(pos: Int, l: Int, h: Int, attention: Tensor1D): Unit = ()
+}
+
 /**
  * @param x input
  * @param xb input with rmsnorm applied
@@ -77,7 +84,7 @@ class Llama2TensorTransformer(
     trace1d("embedding", x)
   }
 
-  def attention(pos: Int, l: Int, freq_cis_real_row: Tensor1D, freq_cis_imag_row: Tensor1D, kv: KV): Unit = {
+  def attention(pos: Int, l: Int, freq_cis_real_row: Tensor1D, freq_cis_imag_row: Tensor1D, kv: KV, reporter: Reporter): Unit = {
     // attention rmsnorm
     xb := x.rmsnorm(rms_att_weight(l), eps)
 
@@ -159,6 +166,8 @@ class Llama2TensorTransformer(
 
         att(h).shorten(pos + 1).softmaxMut()
         trace1d("softmax att", att.toFloatArray.take(pos + 1))
+
+        reporter.attention(pos, l, h, att(h).shorten(pos + 1))
 
         // weighted sum of the values, store into xb
         {
@@ -246,7 +255,7 @@ class Llama2TensorTransformer(
     logits := wcls `@` x
   }
 
-  def step(token: Int, pos: Int, kv: KV): Array[Float] = {
+  def step(token: Int, pos: Int, kv: KV, reporter: Reporter): Array[Float] = {
 
     println(s"Step $pos token $token")
 
@@ -261,7 +270,7 @@ class Llama2TensorTransformer(
     while (l < nLayers) {
       println(s"start layer $l")
 
-      attention(pos, l, freq_cis_real_row, freq_cis_imag_row, kv: KV)
+      attention(pos, l, freq_cis_real_row, freq_cis_imag_row, kv, reporter)
       ffn(l)
 
       l += 1

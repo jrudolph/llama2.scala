@@ -46,7 +46,7 @@ class Llama2SimpleTransformer(
     //arr.zipWithIndex.foreach { case (x, i) => println(f"$name%s $i%5d $x%f") }
   }
 
-  def step(token: Int, pos: Int, kv: KV): Array[Float] = {
+  def step(token: Int, pos: Int, kv: KV, reporter: Reporter): Array[Float] = {
     import config._
     import weights._
 

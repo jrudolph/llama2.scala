@@ -16,6 +16,25 @@
   <div><a href="/generate?method=argmax&n=20&tokens=@{state.stateHistory.dropRight(1).map(_.chosenToken).mkString(",")}">Generate 20 more with greedy search</a></div>
 </div>
 
+<h4>Attention (in this step)</h4>
+<table>
+  <tr>
+    <th>Layer</th><th>Head</th><th>&lt;s&gt;</th>
+@for(step <- state.stateHistory.dropRight(1)) {
+    <th>@{step.chosenTokenText}</th>
+}
+  </tr>
+@for(Attention(l, h, att) <- state.attention) {
+  <tr>
+    <td>@{l}</td>
+    <td>@{h}</td>
+    @for(v <- att.toFloatArray) {
+      <td style="background-color: @{Colors.AttentionColoring.colorFor(v)}">@{v.formatted("%5.2f")}</td>
+    }
+  </tr>
+}
+</table>
+
 <h4>Top completions</h4>
 <table>
   <tr><th>Logit value</th><th>Prob</th><th>Cum. Prob.</th><th>TokenID</th><th>Text</th></th>

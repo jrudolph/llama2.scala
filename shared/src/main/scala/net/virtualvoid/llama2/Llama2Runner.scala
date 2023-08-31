@@ -116,7 +116,7 @@ class Llama2Runner(transformer: Llama2Transformer, model: Llama2Model) {
 
     def hasNext: Boolean = pos < steps && token != 0
     def next(): String = {
-      val logits = transformer.step(token, pos, kv)
+      val logits = transformer.step(token, pos, kv, NoReporter)
 
       /* interesting to see what possible completions are
       if (pos == -1) {
