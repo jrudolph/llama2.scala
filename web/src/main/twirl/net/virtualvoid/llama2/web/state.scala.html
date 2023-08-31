@@ -38,8 +38,7 @@
 <h4>Top completions</h4>
 <table>
   <tr><th>Logit value</th><th>Prob</th><th>Cum. Prob.</th><th>ID</th><th>-- Token --</th>
-    <td class="vmap">@for(c <- state.classifier.toFloatArray){<span style="background-color: @{Colors.Classifier.colorFor(c)}"></span>}</td>
-
+    <td class="vmap" style="border-bottom: 1px solid black;">@for(c <- state.classifier.toFloatArray){<span style="background-color: @{Colors.Classifier.colorFor(c)}"></span>}</td>
   </tr>
 @for(
   x <- Seq(1);
