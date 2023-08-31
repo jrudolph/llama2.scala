@@ -18,7 +18,7 @@
 
 <h4>Attention (in this step)</h4>
 <table>
-  <tr>
+  <tr style="font-size: smaller">
     <th>Layer</th><th>Head</th><th>&lt;s&gt;</th>
 @for(step <- state.stateHistory.dropRight(1)) {
     <th>@{step.chosenTokenText}</th>
