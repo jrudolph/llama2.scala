@@ -21,5 +21,8 @@ body {
     border-spacing: 0;
     padding: 0;
     display: inline-block;
+}
 
+footer {
+    font-style: italic;
 }
