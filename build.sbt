@@ -47,6 +47,7 @@ lazy val web = project.in(file("web"))
       Seq(
         "org.apache.pekko" %% "pekko-stream" % pekkoV,
         "org.apache.pekko" %% "pekko-http" % pekkoHttpV,
+        "org.apache.pekko" %% "pekko-http-caching" % pekkoHttpV,
         "io.spray" %% "spray-json" % "1.3.6",
         "com.typesafe.play" %% "twirl-api" % "1.6.0-RC4"
       )

@@ -1,14 +1,22 @@
 package net.virtualvoid.llama2
 package web
 
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.http.caching.LfuCache
 import org.apache.pekko.http.scaladsl.model.{ StatusCodes, Uri }
 import org.apache.pekko.http.scaladsl.server.{ Directive1, Directives, Route }
 
-class Llama2Routes(initialState: Llama2State) extends Directives with TwirlSupport {
+import scala.concurrent.Future
+
+class Llama2Routes(initialState: Llama2State)(implicit system: ActorSystem) extends Directives with TwirlSupport {
+  import system.dispatcher
+
   val transformer = Llama2TensorTransformer.init(initialState.model)
   val sampler = TemperatureSampling(1f, 0.99f)
 
-  val initTokens = initialState.next(30, transformer, sampler)
+  val initTokens = initialState.next(50, transformer, sampler)
+
+  val stateCache = LfuCache[Seq[Int], Llama2State]
 
   val main =
     concat(
@@ -38,7 +46,15 @@ class Llama2Routes(initialState: Llama2State) extends Directives with TwirlSuppo
 
   def stateAtPrompt: Directive1[Llama2State] =
     parameter("tokens".as[Seq[Int]]).flatMap { toks =>
-      provide(initialState.prompt(toks))
+      def get(toks: Seq[Int]): Future[Llama2State] =
+        stateCache(
+          toks,
+          () =>
+            if (toks.nonEmpty) Future(get(toks.init).map(_.prompt(toks.takeRight(1)))).flatten
+            else Future.successful(initialState)
+        )
+
+      onSuccess(get(toks))
     }
 
   def redirectToState(state: Llama2State): Route =
