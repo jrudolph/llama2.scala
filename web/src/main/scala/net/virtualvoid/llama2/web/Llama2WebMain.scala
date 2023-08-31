@@ -9,8 +9,9 @@ import scala.util.{ Failure, Success }
 
 object Llama2WebMain extends App {
   implicit val system: ActorSystem = ActorSystem()
-
   import system.dispatcher
+
+  val appConfig = AppConfig.fromConfig(system.settings.config)
 
   val baseDir = { // reStart runs with a subdirectory as the working directory
     val firstTry = new File("tokenizer.bin")
@@ -18,12 +19,16 @@ object Llama2WebMain extends App {
     else new File("..")
   }
   //val checkpointFile = new File(baseDir, "llama2_7b.bin")
-  val checkpointFile = new File(baseDir, "stories15M.bin")
+  val checkpointFile = new File(appConfig.model)
+
+  if (!checkpointFile.exists()) println(s"Model file not found at ${checkpointFile.getAbsolutePath}")
+
   //val checkpointFile = new File(baseDir, "stories42M.bin")
   //val checkpointFile = new File(baseDir, "stories110M.bin")
-  val tokenizerFile = new File(baseDir, "tokenizer.bin")
+  val tokenizerFile = new File(checkpointFile.getParentFile, "tokenizer.bin")
+  if (!tokenizerFile.exists()) println(s"Tokenizer file not found at ${tokenizerFile.getAbsolutePath}")
 
-  val ggmlFile = new File(baseDir, "llama-2-7b.ggmlv3.q4_0.bin")
+  //val ggmlFile = new File(baseDir, "llama-2-7b.ggmlv3.q4_0.bin")
 
   val model = Llama2Model.fromLlama2CModel(checkpointFile, tokenizerFile)
   //val model = Llama2Model.fromGgml(ggmlFile)
@@ -44,7 +49,6 @@ object Llama2WebMain extends App {
   //AVX2MathImplementation
   //VectMult.setParallelism(6)
 
-  val appConfig = AppConfig.fromConfig(system.settings.config)
   val routes = new Llama2Routes(initial).main
 
   val server = Http().newServerAt(appConfig.host, appConfig.port).bind(routes)
