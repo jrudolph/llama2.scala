@@ -12,7 +12,7 @@ abstract class MathImplementation {
 }
 
 object MathImplementation {
-  private[this] var TheMathImplementation: MathImplementation = AVX2MathImplementation
+  private[this] var TheMathImplementation: MathImplementation = ScalaMathImplementation
 
   def setImplementation(impl: MathImplementation): Unit =
     TheMathImplementation = impl

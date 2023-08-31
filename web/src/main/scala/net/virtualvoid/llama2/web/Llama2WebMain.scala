@@ -41,8 +41,8 @@ object Llama2WebMain extends App {
 
   printConfig(model.config)
   val initial = Llama2State(model)
-  AVX2MathImplementation
-  VectMult.setParallelism(6)
+  //AVX2MathImplementation
+  //VectMult.setParallelism(6)
 
   val appConfig = AppConfig.fromConfig(system.settings.config)
   val routes = new Llama2Routes(initial).main
