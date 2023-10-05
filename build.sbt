@@ -1,7 +1,7 @@
 import scala.scalanative.build._
 
-val scalaV = "3.3.0"
-val scalaTestV = "3.2.16"
+val scalaV = "3.3.1"
+val scalaTestV = "3.2.17"
 
 lazy val llama2 =
   crossProject(JVMPlatform, NativePlatform)
