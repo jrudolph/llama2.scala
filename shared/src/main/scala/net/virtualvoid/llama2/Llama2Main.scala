@@ -15,9 +15,11 @@ object Llama2Main extends App {
   val tokenizerFile = new File(baseDir, "tokenizer.bin")
 
   val ggmlFile = new File(baseDir, "llama-2-7b.ggmlv3.q4_0.bin")
+  val ggufFile = new File(baseDir, "codellama-7b.Q4_0.gguf")
 
   //val model = Llama2Model.fromLlama2CModel(checkpointFile, tokenizerFile)
-  val model = Llama2Model.fromGgml(ggmlFile)
+  //val model = Llama2Model.fromGgml(ggmlFile)
+  val model = Llama2Model.fromGguf(ggufFile)
 
   val useTensor = true
   val transformer: Llama2Transformer =

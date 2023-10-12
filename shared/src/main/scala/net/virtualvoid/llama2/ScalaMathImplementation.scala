@@ -256,22 +256,21 @@ object ScalaMathImplementation extends MathImplementation {
     }
   }
 
+  val exp_offset = 0xE0 << 23
+  val exp_scale = java.lang.Float.intBitsToFloat(0x7800000)
+  val magic_mask = 126 << 23
+  val magic_bias = 0.5f
+  val denormalized_cutoff = 1 << 27
+
   def fp16Tofp32(fp16: Short): Float = {
     // See https://github.com/Maratyszcza/FP16/blob/0a92994d729ff76a58f692d3028ca1b64b145d91/include/fp16/fp16.h#L108 / MIT license
     val w = (fp16.toInt & 0xffff) << 16
     val sign = w & 0x80000000
     val two_w = w + w
 
-    val exp_offset = 0xE0 << 23
-    val exp_scale = java.lang.Float.intBitsToFloat(0x7800000)
-
     val normalized_value = java.lang.Float.intBitsToFloat((two_w >> 4) + exp_offset) * exp_scale
-
-    val magic_mask = 126 << 23
-    val magic_bias = 0.5f
     val denormalized_value = java.lang.Float.intBitsToFloat((two_w >> 17) | magic_mask) - magic_bias
 
-    val denormalized_cutoff = 1 << 27
     val result = sign |
       (if (two_w < denormalized_cutoff) java.lang.Float.floatToIntBits(denormalized_value) else java.lang.Float.floatToIntBits(normalized_value))
     java.lang.Float.intBitsToFloat(result)
