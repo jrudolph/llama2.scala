@@ -145,7 +145,7 @@ object GgufLoader {
       info
     }
 
-    println(f"tensorCount: $tensorCount metadataEntries: $metadataEntries")
+    //println(f"tensorCount: $tensorCount metadataEntries: $metadataEntries")
 
     val metadata = Seq.fill(metadataEntries.toInt)(readKV()).toMap
     val tensorInfos = Seq.fill(tensorCount.toInt)(readTensorInfo()).map(info => info.name -> info).toMap
@@ -167,7 +167,6 @@ object GgufLoader {
     val vocabSize = metadata("tokenizer.ggml.tokens").cast[MetadataValue.Array].values.size
 
     val config = Config(dim, hiddenDim, layers, head, head, vocabSize, seqLen, false, eps)
-    println(config)
 
     def readVocab(): Vocab = {
       val tokenizerType = metadata("tokenizer.ggml.model").stringValue
@@ -200,7 +199,7 @@ object GgufLoader {
         val qBlockSpace = 210L
         val qBlockK = 256L
         val size = qBlockSpace * dims / qBlockK
-        println(f"Q6_K size: $size dims: $dims qBlockSpace: $qBlockSpace qBlockK: $qBlockK")
+        // println(f"Q6_K size: $size dims: $dims qBlockSpace: $qBlockSpace qBlockK: $qBlockK")
         size
     }
 
@@ -299,7 +298,6 @@ object GgufLoader {
     }
     def tensor2DQ6_K(dataBuffer: ByteBuffer, info: TensorInfo): Tensor2D = {
       def dequantizeQ6_K(dataBuffer: ByteBuffer, info: TensorInfo): FloatBuffer = {
-        println(dataBuffer.capacity())
         val numEls = info.dimensions.product.toInt
         val size = numEls * 4
         val buffer = ByteBuffer.allocateDirect(size).order(ByteOrder.LITTLE_ENDIAN).asFloatBuffer()
@@ -410,6 +408,13 @@ object GgufLoader {
     val full7b = new File(ggufFile.getParentFile, "llama2_7b.bin")
     val fullConfig = Config.fromFile(full7b)
     val fullWeights = Weights.fromFile(fullConfig, full7b)
+
+    // FIXME: something is slightly off with the Q6_K weights
+    // maybe it's not? Since we haven't implemented Q6_K_Q8_K matmul but just dequantize, we will have different kinds
+    // of rounding errors than the original model when executed on llama.cpp
+
+    // you can use this to compare with other quantizations
+    /*
     val ggmlModel = Llama2Model.fromGgml(new File("../llama-2-7b.ggmlv3.q4_0.bin"))
     val gw = ggmlModel.weights
 
@@ -425,36 +430,42 @@ object GgufLoader {
     }
 
     println(gw.wcls.size0 -> gw.wcls.size1)
-    val wcn = d2("output.weight")
-    println(wcn.size0 -> wcn.size1)
+    val wcn = dequantize(d2("output.weight"))
+    val buf1 = new Array[Float](wcn.size0 * wcn.size1)
+    wcn.toFloatBuffer.get(buf1, 0, wcn.size0 * wcn.size1)
 
-    vocab.tokenScores.zip(ggmlModel.vocab.tokenScores).take(100).foreach {
-      case ((t1, s1), (t2, s2)) =>
-        println(f"'$t1%-20s' '$t2%-20s'")
+    println(wcn.size0 -> wcn.size1)
+    val ggmlwcn = fullWeights.wcls//dequantize(ggmlModel.weights.wcls)
+    val buf2 = new Array[Float](ggmlwcn.size0 * ggmlwcn.size1)
+    ggmlwcn.toFloatBuffer.get(buf2, 0, ggmlwcn.size0 * ggmlwcn.size1)
+
+    buf1.zip(buf2).foreach { case (a, b) =>
+      println(a -> b)
     }
 
-    val res =
-    new Weights {
-        val tokenEmbeddingTable: Tensor2D = d2("token_embd.weight")
-        val rms_att_weight: Tensor2D = byLayerD1("attn_norm.weight")
-        val wq: Tensor3D = byLayerD2("attn_q.weight")
-        val wk: Tensor3D = byLayerD2("attn_k.weight")
-        val wv: Tensor3D = byLayerD2("attn_v.weight")
-        val wo: Tensor3D = byLayerD2("attn_output.weight")
-        val rms_ffn_weight: Tensor2D = byLayerD1("ffn_norm.weight")
-        val w1: Tensor3D = byLayerD2("ffn_gate.weight")
-        val w2: Tensor3D = byLayerD2("ffn_down.weight")
-        val w3: Tensor3D = byLayerD2("ffn_up.weight")
-        val rms_final_weight: Tensor1D = d1("output_norm.weight")
-        val freq_cis_real: Tensor2D = fullWeights.freq_cis_real
-        val freq_cis_imag: Tensor2D = fullWeights.freq_cis_imag
-        val wcls: Tensor2D = d2("output.weight")
-        println("Loading done")
+     */
 
-        def quantizeQ4: Weights = throw new IllegalArgumentException("Not supported")
-        def quantizeQ8: Weights = throw new IllegalArgumentException("Not supported")
-      }
+    val weights =
+      new Weights {
+          val tokenEmbeddingTable: Tensor2D = d2("token_embd.weight")
+          val rms_att_weight: Tensor2D = byLayerD1("attn_norm.weight")
+          val wq: Tensor3D = byLayerD2("attn_q.weight")
+          val wk: Tensor3D = byLayerD2("attn_k.weight")
+          val wv: Tensor3D = byLayerD2("attn_v.weight")
+          val wo: Tensor3D = byLayerD2("attn_output.weight")
+          val rms_ffn_weight: Tensor2D = byLayerD1("ffn_norm.weight")
+          val w1: Tensor3D = byLayerD2("ffn_gate.weight")
+          val w2: Tensor3D = byLayerD2("ffn_down.weight")
+          val w3: Tensor3D = byLayerD2("ffn_up.weight")
+          val rms_final_weight: Tensor1D = d1("output_norm.weight")
+          val freq_cis_real: Tensor2D = fullWeights.freq_cis_real
+          val freq_cis_imag: Tensor2D = fullWeights.freq_cis_imag
+          val wcls: Tensor2D = d2("output.weight")
 
-    (config, vocab, res)
+          def quantizeQ4: Weights = throw new IllegalArgumentException("Not supported")
+          def quantizeQ8: Weights = throw new IllegalArgumentException("Not supported")
+        }
+
+    (config, vocab, weights)
   }
 }
